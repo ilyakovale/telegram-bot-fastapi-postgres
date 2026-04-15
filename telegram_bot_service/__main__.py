@@ -4,9 +4,14 @@ from dotenv import load_dotenv, dotenv_values
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import os
-from dotenv import load_dotenv, dotenv_values
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import threading
 
-BASE_DIR = Path(__file__).parent
+fapp = FastAPI(title="Telegram Bot Microservice")
+
+BASE_DIR = Path(__file__).parent.parent
 print(f"Python ищет файлы в: {BASE_DIR}")
 
 load_dotenv(BASE_DIR / '.env.token')
@@ -25,17 +30,17 @@ with open(BASE_DIR / 'contacts.txt', 'r', encoding='utf-8') as file:
     contacts = file.read()
 print(f"CONTACTS: {contacts}")
 
+telegram_bot = None
 
+class SendMessageRequest(BaseModel):
+    chat_id: int  # ID чата (не объект Update)
+    text: str     # Текст сообщения
+    parse_mode: str = "HTML"  # Режим форматирования
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Команды: /start, /help")
 
-async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await admin_check(update, context):
-        await update.message.reply_text("Бот остановлен!")
-        context.application.stop()
-        context.application.shutdown()
 
 async def admin_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -96,18 +101,52 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📞 Контакты":
         await update.message.reply_text(contacts)
 
-def main():
-    # Создаем приложение
-    app = Application.builder().token(TOKEN).build()
+@fapp.post("/send_message")
+async def api_send_message(request: SendMessageRequest):
+    """Отправка сообщения через API"""
+    global telegram_bot
     
-    # Добавляем обработчики
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("stop", stop_command))
-    app.add_handler(CommandHandler("admin_panel", admin_panel))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
+    if not telegram_bot:
+        raise HTTPException(status_code=503, detail="Bot not initialized")
+    
+    try:
+        # Используем глобальный экземпляр бота
+        await telegram_bot.send_message(
+            chat_id=request.chat_id,
+            text=request.text,
+            parse_mode=request.parse_mode
+        )
+        return {"status": "success", "chat_id": request.chat_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@fapp.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+def run_fastapi():
+    uvicorn.run(fapp, host="0.0.0.0", port=8000)
+
+def main():
+    global telegram_bot
+    
+    # Запускаем FastAPI в отдельном потоке
+    api_thread = threading.Thread(target=run_fastapi, daemon=True)
+    api_thread.start()
+    print("🚀 FastAPI запущен на http://localhost:8000")
+    
+    # Запускаем бота в основном потоке
+    tapp = Application.builder().token(TOKEN).build()
+    telegram_bot = tapp.bot
+    
+    tapp.add_handler(CommandHandler("start", start))
+    tapp.add_handler(CommandHandler("help", help_command))
+    tapp.add_handler(CommandHandler("admin_panel", admin_panel))
+    tapp.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
+    
     print("🤖 Бот запущен...")
-    app.run_polling(allowed_updates=[])
+    # Это синхронный вызов, он не требует asyncio
+    tapp.run_polling(allowed_updates=[])
 
 if __name__ == "__main__":   
     main()
