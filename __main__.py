@@ -1,21 +1,30 @@
 import asyncio
+from pathlib import Path
 from dotenv import load_dotenv, dotenv_values
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import Application, CommandHandler, ContextTypes
-
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import os
 from dotenv import load_dotenv, dotenv_values
 
-load_dotenv()
+BASE_DIR = Path(__file__).parent
+print(f"Python ищет файлы в: {BASE_DIR}")
 
+load_dotenv(BASE_DIR / '.env.token')
 TOKEN = os.getenv("TOKEN")
-ADMINS = os.getenv("ADMINS")
-ADMINS = [int(admin) for admin in ADMINS.split(",")] if ADMINS else []
-print (ADMINS)
 
 if not TOKEN:
     print("Ошибка: Не найден токен бота. Убедитесь, что переменная TOKEN установлена в файле .env.")
     exit(1)
+print (f"TOKEN: {TOKEN}")
+
+ADMINS = os.getenv("ADMINS")
+ADMINS = [int(admin) for admin in ADMINS.split(",")] if ADMINS else []
+print (f"ADMINS: {ADMINS}")
+
+with open(BASE_DIR / 'contacts.txt', 'r', encoding='utf-8') as file:
+    contacts = file.read()
+print(f"CONTACTS: {contacts}")
+
 
 
 
@@ -62,7 +71,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [KeyboardButton("📦 Заказать")],
         [KeyboardButton("ℹ️ Аккаунт"), KeyboardButton("📞 Контакты")],
-        [KeyboardButton("📍 Адрес"), KeyboardButton("🕐 Режим работы")],
     ]
     
     reply_markup = ReplyKeyboardMarkup(
@@ -76,7 +84,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
     
-
+async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text  # Получаем текст нажатой кнопки
+    
+    if text == "📦 Заказать":
+        await update.message.reply_text("Оформляем заказ...")
+    
+    elif text == "ℹ️ Аккаунт":
+        await update.message.reply_text("Мы продаём куриную продукцию!")
+    
+    elif text == "📞 Контакты":
+        await update.message.reply_text(contacts)
 
 def main():
     # Создаем приложение
@@ -87,6 +105,7 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("stop", stop_command))
     app.add_handler(CommandHandler("admin_panel", admin_panel))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
     print("🤖 Бот запущен...")
     app.run_polling(allowed_updates=[])
 
