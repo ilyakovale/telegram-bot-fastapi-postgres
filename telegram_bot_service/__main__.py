@@ -8,6 +8,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import threading
+import httpx
 
 fapp = FastAPI(title="Telegram Bot Microservice")
 
@@ -96,7 +97,30 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Оформляем заказ...")
     
     elif text == "ℹ️ Аккаунт":
-        await update.message.reply_text("Мы продаём куриную продукцию!")
+         async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    "http://localhost:8001/get_account",
+                    json={
+                        "chat_id": update.effective_chat.id,
+                        "text": "Информация об аккаунте",
+                        "parse_mode": "HTML"
+                    },
+                    timeout=10.0
+                )
+                
+                # ✅ ОБРАБАТЫВАЕМ ОТВЕТ ОТ МИКРОСЕРВИСА
+                if response.status_code == 200:
+                    result = response.json()
+                    # Отправляем пользователю ответ от микросервиса
+                    await update.message.reply_text(result.get("message", "Данные получены"))
+                else:
+                    await update.message.reply_text(f"❌ Ошибка: {response.status_code}")
+                    
+            except httpx.TimeoutException:
+                await update.message.reply_text("❌ Сервис аккаунтов не отвечает")
+            except Exception as e:
+                await update.message.reply_text(f"❌ Ошибка: {str(e)}")
     
     elif text == "📞 Контакты":
         await update.message.reply_text(contacts)
