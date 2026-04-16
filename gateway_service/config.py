@@ -1,9 +1,13 @@
 import os
+import sys
 from dotenv import load_dotenv, dotenv_values
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 print(f"Python ищет файлы в: {BASE_DIR}")
+
+sys.path.append(str(BASE_DIR / 'requests_templates')) 
+from accountrequests import SendMessageRequest
 
 load_dotenv(BASE_DIR / '.env.token')
 TOKEN = os.getenv("TOKEN")

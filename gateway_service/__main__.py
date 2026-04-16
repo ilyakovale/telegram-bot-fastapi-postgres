@@ -5,12 +5,9 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 import threading
 import httpx
-from config import TOKEN, ADMINS, contacts
-import accountrequests
-
+from config import TOKEN, ADMINS, contacts, SendMessageRequest
 fapp = FastAPI(title="Telegram Bot Microservice")
 
-telegram_bot = None
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -99,25 +96,6 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📞 Контакты":
         await update.message.reply_text(contacts)
 
-@fapp.post("/send_message")
-async def api_send_message(request: SendMessageRequest):
-    """Отправка сообщения через API"""
-    global telegram_bot
-    
-    if not telegram_bot:
-        raise HTTPException(status_code=503, detail="Bot not initialized")
-    
-    try:
-        # Используем глобальный экземпляр бота
-        await telegram_bot.send_message(
-            chat_id=request.chat_id,
-            text=request.text,
-            parse_mode=request.parse_mode
-        )
-        return {"status": "success", "chat_id": request.chat_id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
 @fapp.get("/health")
 async def health_check():
     return {"status": "healthy"}
@@ -128,22 +106,22 @@ def run_fastapi():
 def main():
     global telegram_bot
     
-    # Запускаем FastAPI в отдельном потоке
+
     api_thread = threading.Thread(target=run_fastapi, daemon=True)
     api_thread.start()
+
     print("🚀 FastAPI запущен на http://localhost:8000")
     
-    # Запускаем бота в основном потоке
     tapp = Application.builder().token(TOKEN).build()
-    telegram_bot = tapp.bot
+    
     
     tapp.add_handler(CommandHandler("start", start))
     tapp.add_handler(CommandHandler("help", help_command))
     tapp.add_handler(CommandHandler("admin_panel", admin_panel))
     tapp.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
-    
-    print("🤖 Бот запущен...")
-    # Это синхронный вызов, он не требует asyncio
+    telegram_bot= tapp.bot
+    print("Бот запущен...")
+
     tapp.run_polling(allowed_updates=[])
 
 if __name__ == "__main__":   
