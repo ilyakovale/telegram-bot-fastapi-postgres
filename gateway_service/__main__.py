@@ -5,9 +5,9 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 import threading
 import httpx
-from config import TOKEN, ADMINS, contacts, SendMessageRequest
-fapp = FastAPI(title="Telegram Bot Microservice")
+from config import TOKEN, ADMINS, contacts, AccountMessageRequest
 
+fapp = FastAPI(title="Telegram Bot Microservice")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -84,7 +84,7 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if response.status_code == 200:
                     result = response.json()
                     # Отправляем пользователю ответ от микросервиса
-                    await update.message.reply_text(result.get("message", "Данные получены"))
+                    await update.message.reply_text(f"{result.get("message", "Данные получены")} {result.get("chat_id", "")}")
                 else:
                     await update.message.reply_text(f"❌ Ошибка: {response.status_code}")
                     
@@ -118,7 +118,9 @@ def main():
     tapp.add_handler(CommandHandler("start", start))
     tapp.add_handler(CommandHandler("help", help_command))
     tapp.add_handler(CommandHandler("admin_panel", admin_panel))
+
     tapp.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
+
     telegram_bot= tapp.bot
     print("Бот запущен...")
 

@@ -2,15 +2,15 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI, HTTPException
 import httpx
-import requests_templates.accountrequests as accountrequests
+from config import AccountMessageRequest
 
 fapp = FastAPI(title="Account Microservice")
 
 
 TELEGRAM_BOT_URL = "http://localhost:8000"
 
-@fapp.post("/get_account")  # ← Бот отправляет сюда
-async def get_account(request: SendMessageRequest):
+@fapp.post("/get_account") 
+async def get_account(request: AccountMessageRequest):
     """ПРИНИМАЕТ запрос от бота и выводит в консоль"""
     
     # Выводим в консоль информацию о полученном запросе
