@@ -23,7 +23,7 @@ start "Account Service" cmd /k "cd /d %ACCOUNT_PATH% && python __main__.py"
 
 echo.
 echo ========================================
-echo    ✅ all services started successfully!
+echo    all services started successfully!
 echo ========================================
 echo.
 

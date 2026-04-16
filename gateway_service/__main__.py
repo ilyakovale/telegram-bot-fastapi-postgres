@@ -1,4 +1,5 @@
 import asyncio
+from sqlalchemy import update
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import uvicorn
@@ -68,33 +69,11 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Оформляем заказ...")
     
     elif text == "ℹ️ Аккаунт":
-         async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(
-                    "http://localhost:8001/get_account",
-                    json={
-                        "chat_id": update.effective_chat.id,
-                        "text": "Информация об аккаунте",
-                        "parse_mode": "HTML"
-                    },
-                    timeout=10.0
-                )
-                
-                # ✅ ОБРАБАТЫВАЕМ ОТВЕТ ОТ МИКРОСЕРВИСА
-                if response.status_code == 200:
-                    result = response.json()
-                    # Отправляем пользователю ответ от микросервиса
-                    await update.message.reply_text(f"{result.get("message", "Данные получены")} {result.get("chat_id", "")}")
-                else:
-                    await update.message.reply_text(f"❌ Ошибка: {response.status_code}")
-                    
-            except httpx.TimeoutException:
-                await update.message.reply_text("❌ Сервис аккаунтов не отвечает")
-            except Exception as e:
-                await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+         await get_account_info(update, update.effective_chat.id, "Информация об аккаунте", "HTML")
     
     elif text == "📞 Контакты":
         await update.message.reply_text(contacts)
+
 
 @fapp.get("/health")
 async def health_check():
@@ -102,6 +81,30 @@ async def health_check():
 
 def run_fastapi():
     uvicorn.run(fapp, host="0.0.0.0", port=8000)
+
+async def get_account_info(update: Update, chat_id: int, text: str, parse_mode: str):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                "http://localhost:8001/get_account",
+                json={
+                    "chat_id": chat_id,
+                    "text": text,
+                    "parse_mode": parse_mode
+                },
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                await update.message.reply_text(f"{result.get("message", "Данные получены")} {result.get("chat_id", "")}")
+            else:
+                return {"status": "error", "message": f"Ошибка: {response.status_code}"}
+                
+        except httpx.TimeoutException:
+            return {"status": "error", "message": "Сервис аккаунтов не отвечает"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
 def main():
     global telegram_bot
