@@ -9,6 +9,7 @@ print(f"Python ищет файлы в: {BASE_DIR}")
 sys.path.append(str((BASE_DIR.parent) / 'requests_templates')) 
 try:
     from accountrequests import AccountMessageRequest
+    print("Шаблоны загружены")
 except ImportError as e:
     print(f"Ошибка при импорте accountrequests: {e}")
     AccountMessageRequest = None

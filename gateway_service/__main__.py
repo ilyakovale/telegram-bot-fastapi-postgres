@@ -85,7 +85,7 @@ async def get_account_info(update: Update, chat_id: int, text: str, parse_mode: 
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
-                "http://localhost:8001/get_account",
+                "http://host.docker.internal:8001/get_account",
                 json={
                     "chat_id": chat_id,
                     "text": text,
@@ -112,7 +112,7 @@ def main():
     api_thread = threading.Thread(target=run_fastapi, daemon=True)
     api_thread.start()
 
-    print("🚀 FastAPI запущен на http://localhost:8000")
+    print("🚀 FastAPI запущен на http://host.docker.internal:8000")
     
     tapp = Application.builder().token(TOKEN).build()
     

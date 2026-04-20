@@ -2,12 +2,12 @@ FROM python:3.14-alpine3.22
 WORKDIR /python-app
 ENV PYTHONUNBUFFERED=1
 
-COPY gateway_service/requirements.txt .
+COPY account_service/requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY gateway_service/ gateway_service/
+COPY account_service/ account_service/
 COPY requests_templates/ requests_templates/
 
-EXPOSE 8000
+EXPOSE 8001
 
-CMD ["python", "gateway_service/__main__.py"]
+CMD ["python", "account_service/__main__.py"]
