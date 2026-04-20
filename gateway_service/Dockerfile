@@ -3,10 +3,12 @@ WORKDIR /python-app
 ENV PYTHONUNBUFFERED=1
 
 COPY gateway_service/requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache -r requirements.txt
 
 COPY gateway_service/ gateway_service/
-COPY requests_templates/ requests_templates/
+
+RUN mkdir -p /python-app/requests_templates
+VOLUME [ "/python-app/requests_templates" ]
 
 EXPOSE 8000
 

@@ -7,7 +7,7 @@ from config import AccountMessageRequest
 fapp = FastAPI(title="Account Microservice")
 
 
-TELEGRAM_BOT_URL = "http://localhost:8000"
+TELEGRAM_BOT_URL = "http://gs:8000"
 
 @fapp.post("/get_account") 
 async def get_account(request: AccountMessageRequest):
