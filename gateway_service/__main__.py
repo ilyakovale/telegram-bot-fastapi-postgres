@@ -1,5 +1,4 @@
 import asyncio
-from sqlalchemy import update
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import uvicorn
