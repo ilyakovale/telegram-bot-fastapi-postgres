@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 RUN pip install --no-cache -r requirements.txt
 
-COPY . .
+COPY . ./account_service/
 
 RUN mkdir -p /python-app/requests_templates
 VOLUME [ "/python-app/requests_templates" ]
