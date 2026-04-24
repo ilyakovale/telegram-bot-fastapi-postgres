@@ -1,86 +1,85 @@
 import asyncio
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.client import bot
+from aiogram.types import Message, Update, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.filters import Command
 import uvicorn
 from fastapi import FastAPI, HTTPException
-import threading
 import httpx
 from config import TOKEN, ADMINS, contacts, AccountMessageRequest
 
 fapp = FastAPI(title="Gateway Microservice")
 
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Команды: /start, /help")
+async def help_command(message: Message):
+    await message.answer("Команды: /start, /help")
 
 
-async def admin_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
+async def admin_check(message: Message):
+    user_id = message.from_user.id
     
     if user_id in ADMINS:
-        await update.message.reply_text("Вы администратор! ✅")
+        await message.answer("Вы администратор! ✅")
         return True
     else:
         return False
 
-async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await admin_check(update, context):
+async def admin_panel(message: Message):
+    if await admin_check(message):
         keyboard = [
-            [KeyboardButton("📊 Статистика"), KeyboardButton("⚙️ Настройки")],
-            [KeyboardButton("🔒 Управление пользователями")],
-            [KeyboardButton("📦 Управление заказами")]
+            [KeyboardButton(text="📊 Статистика"), KeyboardButton(text="⚙️ Настройки")],
+            [KeyboardButton(text="🔒 Управление пользователями")],
+            [KeyboardButton(text="📦 Управление заказами")]
         ]
         
         reply_markup1 = ReplyKeyboardMarkup(
-            keyboard,
+            keyboard=keyboard,
             resize_keyboard=True,
             one_time_keyboard=False
         )
         
-        await update.message.reply_text(
+        await message.answer(
             "Панель администратора:",
             reply_markup=reply_markup1
         )
     
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(message: Message):
     # Создаём кнопки
     keyboard = [
-        [KeyboardButton("📦 Заказать")],
-        [KeyboardButton("ℹ️ Аккаунт"), KeyboardButton("📞 Контакты")],
+        [KeyboardButton(text="📦 Заказать")],
+        [KeyboardButton(text="ℹ️ Аккаунт"), KeyboardButton(text="📞 Контакты")],
     ]
     
     reply_markup = ReplyKeyboardMarkup(
-        keyboard,
+        keyboard=keyboard,
         resize_keyboard=True,  # Автоматический размер
         one_time_keyboard=False  # Не скрывать после нажатия
     )
     
-    await update.message.reply_text(
+    await message.answer(
         "Выберите пункт меню:",
         reply_markup=reply_markup
     )
     
-async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text  # Получаем текст нажатой кнопки
+async def handle_buttons(message: Message):
+    text = message.text  # Получаем текст нажатой кнопки
     
     if text == "📦 Заказать":
-        await update.message.reply_text("Оформляем заказ...")
+        await message.answer("Оформляем заказ...")
     
     elif text == "ℹ️ Аккаунт":
-         await get_account_info(update, update.effective_chat.id, "Информация об аккаунте", "HTML")
+         await get_account_info(message, message.chat.id, "Информация об аккаунте", "HTML")
     
     elif text == "📞 Контакты":
-        await update.message.reply_text(contacts)
+        await message.answer(contacts)
 
 
 @fapp.get("/health")
 async def health_check():
     return {"status": "healthy"}
 
-def run_fastapi():
-    uvicorn.run(fapp, host="0.0.0.0", port=8000)
 
-async def get_account_info(update: Update, chat_id: int, text: str, parse_mode: str):
+async def get_account_info(message: Message, chat_id: int, text: str, parse_mode: str):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
@@ -95,7 +94,7 @@ async def get_account_info(update: Update, chat_id: int, text: str, parse_mode: 
             
             if response.status_code == 200:
                 result = response.json()
-                await update.message.reply_text(f"{result.get("message", "Данные получены")} {result.get("chat_id", "")}")
+                await message.answer(f"{result.get('message', 'Данные получены')} {result.get('chat_id', '')}")
             else:
                 return {"status": "error", "message": f"Ошибка: {response.status_code}"}
                 
@@ -104,30 +103,43 @@ async def get_account_info(update: Update, chat_id: int, text: str, parse_mode: 
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-def main():
-    global telegram_bot
-    
+global telegram_bot
 
-    api_thread = threading.Thread(target=run_fastapi, daemon=True)
-    api_thread.start()
+async def run_fastapi():
+    """Запуск FastAPI сервера"""
+    config = uvicorn.Config(
+        fapp, 
+        host="0.0.0.0", 
+        port=8000, 
+        log_level="info",
+        reload=False
+    )
+    server = uvicorn.Server(config)
+    await server.serve()
+
+async def run_bot():
+    bot = Bot(token=TOKEN)
+    dp = Dispatcher()
+    
+    dp.message.register(start, Command("start"))
+    dp.message.register(help_command, Command("help"))
+    dp.message.register(admin_panel, Command("admin_panel"))
+    dp.message.register(handle_buttons, F.text)
+    telegram_bot = bot
+    await dp.start_polling(bot, allowed_updates=["message"])
+    
+async def main():
+    await asyncio.gather(
+        run_fastapi(),
+        run_bot()
+    )
 
     print("🚀 FastAPI запущен на http://gs:8000")
     
-    tapp = Application.builder().token(TOKEN).build()
-    
-    
-    tapp.add_handler(CommandHandler("start", start))
-    tapp.add_handler(CommandHandler("help", help_command))
-    tapp.add_handler(CommandHandler("admin_panel", admin_panel))
-
-    tapp.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
-
-    telegram_bot= tapp.bot
     print("Бот запущен...")
 
-    tapp.run_polling(allowed_updates=[])
 
 if __name__ == "__main__":   
-    main()
+    asyncio.run(main())
 
 
