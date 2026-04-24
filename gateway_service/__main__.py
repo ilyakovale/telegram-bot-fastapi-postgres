@@ -21,7 +21,6 @@ async def admin_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Вы администратор! ✅")
         return True
     else:
-        await update.message.reply_text("У вас нет прав администратора! ❌")
         return False
 
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
