@@ -8,7 +8,7 @@ RUN pip install --no-cache -r requirements.txt
 COPY . ./gateway_service/
 
 RUN mkdir -p /python-app/requests_templates
-VOLUME [ "/python-app/requests_templates" ]
+COPY ../requests_templates/* /python-app/requests_templates/
 
 EXPOSE 8000
 
