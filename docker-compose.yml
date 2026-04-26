@@ -1,9 +1,9 @@
 services:
 
   gateway_service:
-    build: 
-      context: ./gateway_service/
-      dockerfile: Dockerfile 
+    build:
+      context: .
+      dockerfile: ./gateway_service/Dockerfile
     image: gateway_service:latest
     container_name: gs
 
@@ -11,9 +11,9 @@ services:
      - app-network
 
   account_service:
-    build: 
-      context: ./account_service/
-      dockerfile: Dockerfile 
+    build:
+      context: .
+      dockerfile: ./account_service/Dockerfile
     image: account_service:latest
     container_name: as
   
