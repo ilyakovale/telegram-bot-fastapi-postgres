@@ -1,25 +1,11 @@
 services:
 
-  init-templates:
-    image: alpine
-    volumes:
-      - requests_templates:/target
-      - ./requests_templates:/source
-    command: cp -r /source/. /target/
-
   gateway_service:
     build: 
       context: ./gateway_service/
       dockerfile: Dockerfile 
     image: gateway_service:latest
     container_name: gs
-
-    depends_on:
-      - init-templates
-      - postgres_db
-
-    volumes:
-     - requests_templates:/python-app/requests_templates
 
     networks:
      - app-network
@@ -30,13 +16,7 @@ services:
       dockerfile: Dockerfile 
     image: account_service:latest
     container_name: as
-
-    depends_on:
-      - init-templates
-
-    volumes:
-     - requests_templates:/python-app/requests_templates
-    
+  
     networks:
      - app-network
   
@@ -59,5 +39,4 @@ networks:
     driver: bridge
 
 volumes:
-  requests_templates:
   postgres-data:
