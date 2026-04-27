@@ -136,6 +136,7 @@ async def account_panel(message: Message):
     )
 
     await message.answer(
+        "Аккаунт:",
         reply_markup=reply_markup2
     )
         
