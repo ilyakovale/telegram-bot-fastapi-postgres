@@ -10,10 +10,29 @@ from config import TOKEN, ADMINS, contacts, AccountMessageRequest
 
 fapp = FastAPI(title="Gateway Microservice")
 
+async def handle_buttons(message: Message):
+    text = message.text  # Получаем текст нажатой кнопки
+    
+    if text == "📦 Заказать":
+        await message.answer("Оформляем заказ...")
+    
+    elif text == "ℹ️ Аккаунт":
+        await account_panel(message)
+    
+    elif text == "📞 Контакты":
+        await message.answer(contacts)
 
+    elif text == "ℹ️ Данные аккаунта":
+        await message.answer("данные")
+
+    elif text == "Изменить данные аккаунта":
+        await message.answer("Изменяем данные")
+
+    
 async def help_command(message: Message):
     await message.answer("Команды: /start, /help")
 
+# Admin
 
 async def admin_check(message: Message):
     user_id = message.from_user.id
@@ -42,7 +61,9 @@ async def admin_panel(message: Message):
             "Панель администратора:",
             reply_markup=reply_markup1
         )
-    
+
+# Start buttons
+
 async def start(message: Message):
     # Создаём кнопки
     keyboard = [
@@ -61,22 +82,27 @@ async def start(message: Message):
         reply_markup=reply_markup
     )
     
-async def handle_buttons(message: Message):
-    text = message.text  # Получаем текст нажатой кнопки
-    
-    if text == "📦 Заказать":
-        await message.answer("Оформляем заказ...")
-    
-    elif text == "ℹ️ Аккаунт":
-         await get_account_info(message, message.chat.id, "Информация об аккаунте", "HTML")
-    
-    elif text == "📞 Контакты":
-        await message.answer(contacts)
 
 
-@fapp.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+# Account service
+
+async def account_panel(message: Message):
+    keyboard = [
+        [KeyboardButton(text="ℹ️ Данные аккаунта")],
+        [KeyboardButton(text="Изменить данные аккаунта")],
+    ]
+        
+    reply_markup2 = ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+
+    await message.answer(
+        "Аккаунт:",
+        reply_markup=reply_markup2
+    )
+        
 
 
 async def get_account_info(message: Message, chat_id: int, text: str, parse_mode: str):
@@ -117,7 +143,7 @@ async def run_fastapi():
     server = uvicorn.Server(config)
     await server.serve()
 
-async def run_bot():
+async def run_aiogram():
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
     
@@ -129,17 +155,21 @@ async def run_bot():
     await dp.start_polling(bot, allowed_updates=["message"])
     
 async def main():
-    await asyncio.gather(
-        run_fastapi(),
-        run_bot()
-    )
 
     print("🚀 FastAPI запущен на http://gs:8000")
-    
     print("Бот запущен...")
+
+    await asyncio.gather(
+        run_fastapi(),
+        run_aiogram()
+    )
+
 
 
 if __name__ == "__main__":   
     asyncio.run(main())
 
 
+@fapp.get("/health")
+async def health_check():
+    return {"status": "healthy"}
