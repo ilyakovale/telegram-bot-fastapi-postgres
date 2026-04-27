@@ -4,8 +4,6 @@ class AccountMessageRequest(BaseModel):
     chat_id: int
     command: str     
 
-class AccountMessageAnswer(BaseModel):
+class OrderMessageReques(BaseModel):
     chat_id: int
-    name: str 
-    addres: str
-    phone_number: str
+    command: str
