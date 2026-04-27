@@ -8,11 +8,25 @@ from fastapi import FastAPI, HTTPException
 import httpx
 from config import TOKEN, ADMINS, contacts, AccountMessageRequest
 
-fapp = FastAPI(title="Gateway Microservice")
 
 async def handle_buttons(message: Message):
-    text = message.text  # Получаем текст нажатой кнопки
-    
+    text = message.text  
+    user_id = message.from_user.id
+
+    if user_id in ADMINS:
+        if text == "📊 Статистика":
+            await message.answer("Показать статистику...")
+
+        elif text == "⚙️ Настройки":
+            await message.answer("Открыть настройки...")
+
+        elif text == "🔒 Управление пользователями":
+            await message.answer("Управление пользователями...")
+
+        elif text == "📦 Управление заказами":
+            await message.answer("Управление заказами...")
+
+
     if text == "📦 Заказать":
         await message.answer("Оформляем заказ...")
     
@@ -32,16 +46,15 @@ async def handle_buttons(message: Message):
 async def help_command(message: Message):
     await message.answer("Команды: /start, /help")
 
+@fapp.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 # Admin
 
 async def admin_check(message: Message):
-    user_id = message.from_user.id
-    
-    if user_id in ADMINS:
-        await message.answer("Вы администратор! ✅")
-        return True
-    else:
-        return False
+    user_id = message.from_user.id  
+    return user_id in ADMINS
+
 
 async def admin_panel(message: Message):
     if await admin_check(message):
@@ -62,7 +75,7 @@ async def admin_panel(message: Message):
             reply_markup=reply_markup1
         )
 
-# Start buttons
+# Start
 
 async def start(message: Message):
     # Создаём кнопки
@@ -84,7 +97,7 @@ async def start(message: Message):
     
 
 
-# Account service
+# Account
 
 async def account_panel(message: Message):
     keyboard = [
@@ -129,10 +142,12 @@ async def get_account_info(message: Message, chat_id: int, text: str, parse_mode
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
+#__main__
 global telegram_bot
+fapp = FastAPI(title="Gateway Microservice")
 
 async def run_fastapi():
-    """Запуск FastAPI сервера"""
+    """Запуск FastAPI"""
     config = uvicorn.Config(
         fapp, 
         host="0.0.0.0", 
@@ -144,6 +159,7 @@ async def run_fastapi():
     await server.serve()
 
 async def run_aiogram():
+    """Запуск aiogram3"""
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
     
@@ -168,8 +184,3 @@ async def main():
 
 if __name__ == "__main__":   
     asyncio.run(main())
-
-
-@fapp.get("/health")
-async def health_check():
-    return {"status": "healthy"}
