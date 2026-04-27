@@ -47,9 +47,6 @@ async def handle_buttons(message: Message):
 async def help_command(message: Message):
     await message.answer("Команды: /start, /help")
 
-@fapp.get("/health")
-async def health_check():
-    return {"status": "healthy"}
 # Admin
 
 async def admin_check(message: Message):
@@ -113,7 +110,6 @@ async def account_panel(message: Message):
     )
 
     await message.answer(
-        "Аккаунт:",
         reply_markup=reply_markup2
     )
         
@@ -134,7 +130,7 @@ async def account_service(message: Message, chat_id: int, command: str):
             if response.status_code == 200:
                 result = response.json()
                 if (result.get('status') == "Данные отправлены"):
-                    await message.answer(f"{result.get('name')} {result.get('phone_number')}")
+                    await message.answer(f"Данные аккаунта: \n ФИО : {result.get('name')} \n Адресс : {result.get('address')}\n Номер телефона : {result.get('phone_number')}")
                 else:
                     await message.answer(result.get('status'))
             else:
@@ -145,6 +141,8 @@ async def account_service(message: Message, chat_id: int, command: str):
         except Exception as e:
             return {"status": "error", "message": str(e)}
         
+# Order
+
 
 #__main__
 global telegram_bot
@@ -170,6 +168,7 @@ async def run_aiogram():
     dp.message.register(help_command, Command("help"))
     dp.message.register(admin_panel, Command("admin_panel"))
     dp.message.register(handle_buttons, F.text)
+
     telegram_bot = bot
     await dp.start_polling(bot, allowed_updates=["message"])
     

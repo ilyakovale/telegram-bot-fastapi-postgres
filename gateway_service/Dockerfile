@@ -7,7 +7,6 @@ RUN pip install --no-cache -r requirements.txt
 
 COPY ./gateway_service/ ./gateway_service/
 
-COPY ./requests_templates/ ./requests_templates/
 
 EXPOSE 8000
 
