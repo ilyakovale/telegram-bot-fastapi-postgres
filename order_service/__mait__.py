@@ -33,4 +33,4 @@ async def health():
     return {"status": "healthy", "service": "Account Microservice"}
 
 if __name__ == "__main__":
-    uvicorn.run(fapp, host="0.0.0.0", port=8001)
+    uvicorn.run(fapp, host="0.0.0.0", port=8002)

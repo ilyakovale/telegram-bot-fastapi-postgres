@@ -3,6 +3,9 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.client import bot
 from aiogram.types import Message, Update, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
 import uvicorn
 from fastapi import FastAPI, HTTPException
 import httpx
@@ -10,7 +13,29 @@ from config import TOKEN, ADMINS, contacts
 
 fapp = FastAPI(title="Gateway Microservice")
 
-async def handle_buttons(message: Message):
+class AccountStates(StatesGroup):
+    waiting_for_account_data = State()
+
+async def handle_account_input(message: Message, state: FSMContext):
+    text = message.text
+    parts = [p.strip() for p in text.split(",")]
+    
+    if len(parts) != 3:
+        await message.answer("Неверный формат. Введите: ФИО, Адрес, Номер телефона")
+        return
+    
+    name, address, phone_number = parts
+    
+    await set_account_service(
+        message,
+        message.from_user.id,
+        "input_info",
+        name, address, phone_number
+    )
+    
+    await state.clear()
+
+async def handle_buttons(message: Message, state: FSMContext):
     text = message.text  
     user_id = message.from_user.id
 
@@ -32,16 +57,17 @@ async def handle_buttons(message: Message):
         await message.answer("Оформляем заказ...")
     
     elif text == "ℹ️ Аккаунт":
-         await account_panel(message)
+        await account_panel(message)
     
     elif text == "📞 Контакты":
         await message.answer(contacts)
 
     elif text == "ℹ️ Данные аккаунта":
-        await account_service(message, message.from_user.id, "get_info")
+        await get_account_service(message, message.from_user.id, "get_info")
 
     elif text == "Изменить данные аккаунта":
-        await account_service(message, message.from_user.id, "input_info")
+        await message.answer("Введите данные в формате: ФИО, Адресс, Номер телефона")
+        await state.set_state(AccountStates.waiting_for_account_data)
 
     
 async def help_command(message: Message):
@@ -115,11 +141,64 @@ async def account_panel(message: Message):
         
 
 
-async def account_service(message: Message, chat_id: int, command: str):
+async def get_account_service(message: Message, chat_id: int, command: str):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
-                "http://as:8001/get_account",
+                "http://as:8001/account_get",
+                json={
+                    "chat_id": chat_id,
+                    "command": command,
+                },
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                await message.answer(f"Данные аккаунта: \n ФИО : {result.get('name')} \n Адресс : {result.get('address')}\n Номер телефона : {result.get('phone_number')}")
+
+            else:
+                return {"status": "error", "message": f"Ошибка: {response.status_code}"}
+                
+        except httpx.TimeoutException:
+            return {"status": "error", "message": "Сервис аккаунтов не отвечает"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+async def set_account_service(message: Message, chat_id: int, command: str, name: str, address: str, phone_number: str):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                "http://as:8001/account_set",
+                json={
+                    "chat_id": chat_id,
+                    "command": command,
+                    "name": name,
+                    "address": address,
+                    "phone_number": phone_number
+                },
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                await message.answer(result.get('status'))
+
+            else:
+                return {"status": "error", "message": f"Ошибка: {response.status_code}"}
+                
+        except httpx.TimeoutException:
+            return {"status": "error", "message": "Сервис аккаунтов не отвечает"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+        
+# Order
+
+async def order_service(message: Message,chat_id: int, command: str):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                "http://os:8002/order",
                 json={
                     "chat_id": chat_id,
                     "command": command,
@@ -140,9 +219,6 @@ async def account_service(message: Message, chat_id: int, command: str):
             return {"status": "error", "message": "Сервис аккаунтов не отвечает"}
         except Exception as e:
             return {"status": "error", "message": str(e)}
-        
-# Order
-
 
 #__main__
 global telegram_bot
@@ -162,11 +238,13 @@ async def run_fastapi():
 async def run_aiogram():
     """Запуск aiogram3"""
     bot = Bot(token=TOKEN)
-    dp = Dispatcher()
+    storage = MemoryStorage()
+    dp = Dispatcher(storage=storage)
     
     dp.message.register(start, Command("start"))
     dp.message.register(help_command, Command("help"))
     dp.message.register(admin_panel, Command("admin_panel"))
+    dp.message.register(handle_account_input, AccountStates.waiting_for_account_data)
     dp.message.register(handle_buttons, F.text)
 
     telegram_bot = bot
