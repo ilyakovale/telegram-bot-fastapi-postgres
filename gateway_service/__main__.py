@@ -6,8 +6,9 @@ from aiogram.filters import Command
 import uvicorn
 from fastapi import FastAPI, HTTPException
 import httpx
-from config import TOKEN, ADMINS, contacts, AccountMessageRequest
+from config import TOKEN, ADMINS, contacts
 
+fapp = FastAPI(title="Gateway Microservice")
 
 async def handle_buttons(message: Message):
     text = message.text  
@@ -31,16 +32,16 @@ async def handle_buttons(message: Message):
         await message.answer("Оформляем заказ...")
     
     elif text == "ℹ️ Аккаунт":
-        await account_panel(message)
+         await account_panel(message)
     
     elif text == "📞 Контакты":
         await message.answer(contacts)
 
     elif text == "ℹ️ Данные аккаунта":
-        await message.answer("данные")
+        await account_service(message, message.from_user.id, "get_info")
 
     elif text == "Изменить данные аккаунта":
-        await message.answer("Изменяем данные")
+        await account_service(message, message.from_user.id, "input_info")
 
     
 async def help_command(message: Message):
@@ -118,22 +119,24 @@ async def account_panel(message: Message):
         
 
 
-async def get_account_info(message: Message, chat_id: int, text: str, parse_mode: str):
+async def account_service(message: Message, chat_id: int, command: str):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
                 "http://as:8001/get_account",
                 json={
                     "chat_id": chat_id,
-                    "text": text,
-                    "parse_mode": parse_mode
+                    "command": command,
                 },
                 timeout=10.0
             )
             
             if response.status_code == 200:
                 result = response.json()
-                await message.answer(f"{result.get('message', 'Данные получены')} {result.get('chat_id', '')}")
+                if (result.get('status') == "Данные отправлены"):
+                    await message.answer(f"{result.get('name')} {result.get('phone_number')}")
+                else:
+                    await message.answer(result.get('status'))
             else:
                 return {"status": "error", "message": f"Ошибка: {response.status_code}"}
                 
@@ -141,10 +144,10 @@ async def get_account_info(message: Message, chat_id: int, text: str, parse_mode
             return {"status": "error", "message": "Сервис аккаунтов не отвечает"}
         except Exception as e:
             return {"status": "error", "message": str(e)}
+        
 
 #__main__
 global telegram_bot
-fapp = FastAPI(title="Gateway Microservice")
 
 async def run_fastapi():
     """Запуск FastAPI"""

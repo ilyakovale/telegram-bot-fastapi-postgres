@@ -13,20 +13,18 @@ TELEGRAM_BOT_URL = "http://gs:8000"
 async def get_account(request: AccountMessageRequest):
     """ПРИНИМАЕТ запрос от бота и выводит в консоль"""
     
-    # Выводим в консоль информацию о полученном запросе
-    print("=" * 50)
-    print(f"📥 Получен запрос от бота!")
-    print(f"   chat_id: {request.chat_id}")
-    print(f"   text: {request.text}")
-    print(f"   parse_mode: {request.parse_mode}")
-    print("=" * 50)
+    if (request.command == "get_info"):
+        return {
+            "status": "Данные отправлены",
+            "name": "ivan ivanov",
+            "address": "pushkina",
+            "phone_number": "+375 00 000 00 00",
+        }
     
-    # Возвращаем простой ответ
-    return {
-        "status": "success",
-        "message": f"Ваш запрос '{request.text}' получен",
-        "chat_id": request.chat_id
-    }
+    elif (request.command == "input_info"):
+        return {
+            "status": "Данные записаны"
+        }
 
 @fapp.get("/health")
 async def health():
