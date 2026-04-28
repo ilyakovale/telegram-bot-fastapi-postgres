@@ -1,6 +1,6 @@
 from sqlalchemy import select
-from database import async_session
-from models import Account
+from account_service.database import async_session
+from account_service.models import Account
 
 async def get_account(chat_id: int):
     async with async_session() as session:

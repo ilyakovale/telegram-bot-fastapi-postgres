@@ -7,7 +7,7 @@ class OrderMessageReques(BaseModel):
     chat_id: int
     command: str
 
-fapp = FastAPI(title="Account Microservice")
+fapp = FastAPI(title="Order Microservice")
 
 
 TELEGRAM_BOT_URL = "http://gs:8000"
@@ -28,9 +28,6 @@ async def get_account(request: OrderMessageReques):
             "status": "Данные записаны"
         }
 
-@fapp.get("/health")
-async def health():
-    return {"status": "healthy", "service": "Account Microservice"}
 
 if __name__ == "__main__":
     uvicorn.run(fapp, host="0.0.0.0", port=8002)
