@@ -3,6 +3,8 @@ from dotenv import load_dotenv, dotenv_values
 from pathlib import Path
 from pydantic import BaseModel
 
+class GetAccountsMessageRequest(BaseModel):
+    chat_id: int
 
 
 BASE_DIR = Path(__file__).parent
