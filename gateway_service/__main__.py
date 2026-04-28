@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client import bot
-from aiogram.types import Message, Update, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import Message, ReplyKeyboardRemove, Update, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import State, StatesGroup
@@ -20,11 +20,10 @@ class AccountStates(StatesGroup):
     waiting_for_confirmation = State()
 
 async def handle_account_input(message: Message, state: FSMContext):
-    await message.answer("Введите ФИО\nПример: Иванов Иван Иванович")
+    await message.answer("Введите ФИО\nПример: Иванов Иван Иванович", reply_markup=ReplyKeyboardRemove())
     await state.set_state(AccountStates.waiting_for_name)
 
 
-# Шаг 2: получили имя, просим адрес
 async def handle_name_input(message: Message, state: FSMContext):
     parts = [p.strip() for p in message.text.split()]
     if len(parts) != 3:
@@ -36,19 +35,18 @@ async def handle_name_input(message: Message, state: FSMContext):
     await state.set_state(AccountStates.waiting_for_address)
 
 
-# Шаг 3: получили адрес, просим телефон
 async def handle_address_input(message: Message, state: FSMContext):
     await state.update_data(address=message.text.strip())
     await message.answer("Введите номер телефона\nПример: +375444444444")
     await state.set_state(AccountStates.waiting_for_phone)
 
 
-# Шаг 4: получили телефон, просим подтверждение
 async def handle_phone_input(message: Message, state: FSMContext):
-    phone = message.text.replace(" ", "")
+    phone = message.text.replace(" ", "").replace("-", "")
     if not phone.startswith("+") or not phone[1:].isdigit() or len(phone) < 10:
         await message.answer("Неверный формат номера. Пример: +375444444444")
         return
+    phone = phone[:4] + " " + phone[4:6] + " " + phone[6:9] + " " + phone[9:11] + " " + phone[11:]
 
     await state.update_data(phone_number=phone)
     data = await state.get_data()
@@ -69,7 +67,6 @@ async def handle_phone_input(message: Message, state: FSMContext):
     await state.set_state(AccountStates.waiting_for_confirmation)
 
 
-# Шаг 5: подтверждение
 async def handle_confirmation(message: Message, state: FSMContext):
     if message.text == "Да":
         data = await state.get_data()
@@ -81,12 +78,13 @@ async def handle_confirmation(message: Message, state: FSMContext):
             data["address"],
             data["phone_number"]
         )
-        await message.answer("Данные сохранены!")
+        await state.clear()
+        await start(message)
     else:
         await message.answer("Отменено. Введите данные заново.")
+        await handle_account_input(message, state)
 
-    await state.clear()
-    await start(message)
+
 
 async def handle_buttons(message: Message, state: FSMContext):
     text = message.text  
@@ -182,7 +180,7 @@ async def account_panel(message: Message):
         [KeyboardButton(text="Изменить данные аккаунта")],
     ]
         
-    reply_markup2 = ReplyKeyboardMarkup(
+    reply_markup = ReplyKeyboardMarkup(
         keyboard=keyboard,
         resize_keyboard=True,
         one_time_keyboard=False
@@ -190,7 +188,7 @@ async def account_panel(message: Message):
 
     await message.answer(
         "Аккаунт:",
-        reply_markup=reply_markup2
+        reply_markup=reply_markup
     )
         
 
