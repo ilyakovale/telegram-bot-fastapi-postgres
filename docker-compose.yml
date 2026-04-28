@@ -16,7 +16,10 @@ services:
       dockerfile: ./account_service/Dockerfile
     image: account_service:latest
     container_name: as
-  
+
+    env_file:
+      - .env.db
+      
     networks:
      - app-network
   

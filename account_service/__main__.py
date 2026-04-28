@@ -1,28 +1,43 @@
-import asyncio
+import os
 import uvicorn
-from fastapi import FastAPI, HTTPException
-import httpx
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from config import GetAccountMessageRequest, SetAccountMessageRequest
+from database import engine, Base
+from crud import get_account, set_account
 
-fapp = FastAPI(title="Account Microservice")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)  # создаём таблицы при старте
+    yield
+
+fapp = FastAPI(title="Account Microservice", lifespan=lifespan)
 
 
-TELEGRAM_BOT_URL = "http://gs:8000"
-
-@fapp.post("/account_get") 
-async def get_account(request: GetAccountMessageRequest):
+@fapp.post("/account_get")
+async def account_get(request: GetAccountMessageRequest):
+    account = await get_account(request.chat_id)
+    if not account:
+        return {"status": "error", "message": "Аккаунт не найден"}
     return {
         "status": "Данные отправлены",
-        "name": "ivan ivanov",
-        "address": "pushkina",
-        "phone_number": "+375 00 000 00 00",
-        }
-    
-@fapp.post("/account_set") 
-async def set_account(request: SetAccountMessageRequest):
-    return {
-        "status": "Данные записаны"
+        "name": account.name,
+        "address": account.address,
+        "phone_number": account.phone_number
     }
+
+
+@fapp.post("/account_set")
+async def account_set(request: SetAccountMessageRequest):
+    await set_account(
+        request.chat_id,
+        request.name,
+        request.address,
+        request.phone_number
+    )
+    return {"status": "Данные записаны"}
 
 
 if __name__ == "__main__":

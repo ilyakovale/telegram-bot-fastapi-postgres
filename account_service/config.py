@@ -13,3 +13,7 @@ try:
 except ImportError as e:
     print(f"Ошибка при импорте accountrequests: {e}")
     AccountMessageRequest = None
+
+
+load_dotenv(BASE_DIR / '.env.db')
+DB_URL = os.getenv("DB_URL")
