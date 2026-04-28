@@ -14,26 +14,79 @@ from config import TOKEN, ADMINS, contacts
 fapp = FastAPI(title="Gateway Microservice")
 
 class AccountStates(StatesGroup):
-    waiting_for_account_data = State()
+    waiting_for_name = State()
+    waiting_for_address = State()
+    waiting_for_phone = State()
+    waiting_for_confirmation = State()
 
 async def handle_account_input(message: Message, state: FSMContext):
-    text = message.text
-    parts = [p.strip() for p in text.split(",")]
-    
+    await message.answer("Введите ФИО\nПример: Иванов Иван Иванович")
+    await state.set_state(AccountStates.waiting_for_name)
+
+
+# Шаг 2: получили имя, просим адрес
+async def handle_name_input(message: Message, state: FSMContext):
+    parts = [p.strip() for p in message.text.split()]
     if len(parts) != 3:
-        await message.answer("Неверный формат. Введите: ФИО, Адрес, Номер телефона")
+        await message.answer("Неверный формат. Введите ФИО (три слова через пробел):")
         return
-    
-    name, address, phone_number = parts
-    
-    await set_account_service(
-        message,
-        message.from_user.id,
-        "input_info",
-        name, address, phone_number
+
+    await state.update_data(name=message.text.strip())
+    await message.answer("Введите адрес\nПример: ул. Ленина, д. 1")
+    await state.set_state(AccountStates.waiting_for_address)
+
+
+# Шаг 3: получили адрес, просим телефон
+async def handle_address_input(message: Message, state: FSMContext):
+    await state.update_data(address=message.text.strip())
+    await message.answer("Введите номер телефона\nПример: +375444444444")
+    await state.set_state(AccountStates.waiting_for_phone)
+
+
+# Шаг 4: получили телефон, просим подтверждение
+async def handle_phone_input(message: Message, state: FSMContext):
+    phone = message.text.replace(" ", "")
+    if not phone.startswith("+") or not phone[1:].isdigit() or len(phone) < 10:
+        await message.answer("Неверный формат номера. Пример: +375444444444")
+        return
+
+    await state.update_data(phone_number=phone)
+    data = await state.get_data()
+
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text="Да"), KeyboardButton(text="Нет")]],
+        resize_keyboard=True,
+        one_time_keyboard=True
     )
-    
+    await message.answer(
+        f"Проверьте данные:\n"
+        f"ФИО: {data['name']}\n"
+        f"Адрес: {data['address']}\n"
+        f"Телефон: {data['phone_number']}\n\n"
+        f"Подтвердить?",
+        reply_markup=keyboard
+    )
+    await state.set_state(AccountStates.waiting_for_confirmation)
+
+
+# Шаг 5: подтверждение
+async def handle_confirmation(message: Message, state: FSMContext):
+    if message.text == "Да":
+        data = await state.get_data()
+        await set_account_service(
+            message,
+            message.from_user.id,
+            "input_info",
+            data["name"],
+            data["address"],
+            data["phone_number"]
+        )
+        await message.answer("Данные сохранены!")
+    else:
+        await message.answer("Отменено. Введите данные заново.")
+
     await state.clear()
+    await start(message)
 
 async def handle_buttons(message: Message, state: FSMContext):
     text = message.text  
@@ -66,8 +119,8 @@ async def handle_buttons(message: Message, state: FSMContext):
         await get_account_service(message, message.from_user.id, "get_info")
 
     elif text == "Изменить данные аккаунта":
-        await message.answer("Введите данные в формате: ФИО, Адресс, Номер телефона")
-        await state.set_state(AccountStates.waiting_for_account_data)
+        await handle_account_input(message, state)
+    
 
     
 async def help_command(message: Message):
@@ -245,8 +298,12 @@ async def run_aiogram():
     dp.message.register(start, Command("start"))
     dp.message.register(help_command, Command("help"))
     dp.message.register(admin_panel, Command("admin_panel"))
-    dp.message.register(handle_account_input, AccountStates.waiting_for_account_data)
+    dp.message.register(handle_name_input, AccountStates.waiting_for_name)
+    dp.message.register(handle_address_input, AccountStates.waiting_for_address)
+    dp.message.register(handle_phone_input, AccountStates.waiting_for_phone)
+    dp.message.register(handle_confirmation, AccountStates.waiting_for_confirmation)
     dp.message.register(handle_buttons, F.text)
+
 
     telegram_bot = bot
     await dp.start_polling(bot, allowed_updates=["message"])
