@@ -7,8 +7,6 @@ RUN pip install --no-cache -r requirements.txt
 
 COPY ./account_service/ ./account_service/
 
-COPY ./requests_templates/ ./requests_templates/
-
 EXPOSE 8001
 
 CMD ["python", "account_service/__main__.py"]

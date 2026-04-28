@@ -19,7 +19,7 @@ services:
 
     env_file:
       - .env.db
-      
+
     networks:
      - app-network
   
@@ -35,6 +35,17 @@ services:
 
     networks:
      - app-network
+
+#ОТЛАДКА БАЗЫ ДАННЫХ
+  adminer:
+    image: adminer
+    container_name: adminer
+
+    ports:
+    - "8080:8080"
+
+    networks:
+    - app-network
 
 
 networks:

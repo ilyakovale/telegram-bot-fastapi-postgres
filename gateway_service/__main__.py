@@ -208,8 +208,10 @@ async def get_account_service(message: Message, chat_id: int, command: str):
             
             if response.status_code == 200:
                 result = response.json()
-                await message.answer(f"Данные аккаунта: \n ФИО : {result.get('name')} \n Адресс : {result.get('address')}\n Номер телефона : {result.get('phone_number')}")
-
+                if (result.get('status') == "Данные отправлены"):
+                    await message.answer(f"Данные аккаунта: \n ФИО : {result.get('name')} \n Адресс : {result.get('address')}\n Номер телефона : {result.get('phone_number')}")
+                else:
+                    await message.answer(result.get('status'))
             else:
                 return {"status": "error", "message": f"Ошибка: {response.status_code}"}
                 

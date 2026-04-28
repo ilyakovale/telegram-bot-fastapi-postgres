@@ -20,7 +20,7 @@ fapp = FastAPI(title="Account Microservice", lifespan=lifespan)
 async def account_get(request: GetAccountMessageRequest):
     account = await get_account(request.chat_id)
     if not account:
-        return {"status": "error", "message": "Аккаунт не найден"}
+        return {"status": "Аккаунт не найден"}
     return {
         "status": "Данные отправлены",
         "name": account.name,
