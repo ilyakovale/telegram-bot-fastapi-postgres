@@ -20,6 +20,7 @@ async def set_account(chat_id: int, name: str, address: str, phone_number: str):
             account.name = name
             account.address = address
             account.phone_number = phone_number
+            account.verify = False 
         else:
             session.add(Account(
                 chat_id=chat_id,
