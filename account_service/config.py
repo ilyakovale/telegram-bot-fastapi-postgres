@@ -4,6 +4,9 @@ from dotenv import load_dotenv, dotenv_values
 from pathlib import Path
 from pydantic import BaseModel
 
+class CheckAccountMessageRequest(BaseModel):
+    chat_id: int 
+
 class GetAccountMessageRequest(BaseModel):
     chat_id: int
     command: str     

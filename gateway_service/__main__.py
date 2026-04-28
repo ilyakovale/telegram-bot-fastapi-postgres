@@ -28,14 +28,14 @@ async def handle_buttons(message: Message, state: FSMContext):
             await message.answer("Открыть настройки...")
 
         elif text == "🔒 Управление пользователями":
-            await message.answer("Управление пользователями...")
+            await get_all_accounts_service(message)
 
         elif text == "📦 Управление заказами":
-            await message.answer("Управление заказами...")
+            pass
 
 
     if text == "📦 Заказать":
-        await message.answer("Оформляем заказ...")
+        await order_service(message, message.from_user.id)
     
     elif text == "ℹ️ Аккаунт":
         await account_panel(message)
@@ -69,7 +69,7 @@ async def admin_panel(message: Message):
             [KeyboardButton(text="📦 Управление заказами")]
         ]
         
-        reply_markup1 = ReplyKeyboardMarkup(
+        reply_markup = ReplyKeyboardMarkup(
             keyboard=keyboard,
             resize_keyboard=True,
             one_time_keyboard=False
@@ -77,13 +77,58 @@ async def admin_panel(message: Message):
         
         await message.answer(
             "Панель администратора:",
-            reply_markup=reply_markup1
+            reply_markup=reply_markup
         )
 
+async def get_all_accounts_service(message: Message):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                "http://admin_service:8003/all_accounts_get",
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                accounts = result.get('accounts', [])
+                await message.answer("Успешно")
+                if not accounts:
+                    await message.answer("Аккаунты не найдены")
+                    return {"status": "success", "message": "Аккаунты не найдены"}
+                
+                accounts_info_parts = []
+                for i, acc in enumerate(accounts):
+                    name = acc.get('name', 'Не указано')
+                    address = acc.get('address', 'Не указано')
+                    phone = acc.get('phone_number', 'Не указано')
+                    
+                    accounts_info_parts.append(
+                        f"Аккаунт {i+1}:\n"
+                        f"├─ ФИО: {name}\n"
+                        f"├─ Адрес: {address}\n"
+                        f"└─ Телефон: {phone}"
+                    )
+                
+                accounts_info = "\n\n".join(accounts_info_parts)
+                
+                if len(accounts_info) > 4096:
+                    for i in range(0, len(accounts_info), 4096):
+                        chunk = accounts_info[i:i+4096]
+                        await message.answer(chunk)
+                else:
+                    await message.answer(f"📋 Все аккаунты:\n\n{accounts_info}")
+                
+                return {"status": "success", "count": len(accounts)}
+            else:
+                return {"status": "error", "message": f"Ошибка: {response.status_code}"}
+                
+        except httpx.TimeoutException:
+            return {"status": "error", "message": "Сервис аккаунтов не отвечает"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 # Start
 
 async def start(message: Message):
-    # Создаём кнопки
     keyboard = [
         [KeyboardButton(text="📦 Заказать")],
         [KeyboardButton(text="ℹ️ Аккаунт"), KeyboardButton(text="📞 Контакты")],
@@ -91,8 +136,8 @@ async def start(message: Message):
     
     reply_markup = ReplyKeyboardMarkup(
         keyboard=keyboard,
-        resize_keyboard=True,  # Автоматический размер
-        one_time_keyboard=False  # Не скрывать после нажатия
+        resize_keyboard=True,  
+        one_time_keyboard=False  
     )
     
     await message.answer(
@@ -246,37 +291,38 @@ async def set_account_service(message: Message, chat_id: int, command: str, name
             return {"status": "error", "message": "Сервис аккаунтов не отвечает"}
         except Exception as e:
             return {"status": "error", "message": str(e)}
-        
-# Order
-
-async def order_service(message: Message,chat_id: int, command: str):
+    
+async def check_account_service(chat_id: int):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
-                "http://os:8002/order",
+                "http://as:8001/account_check",
                 json={
                     "chat_id": chat_id,
-                    "command": command,
                 },
                 timeout=10.0
             )
-            
+                
             if response.status_code == 200:
                 result = response.json()
-                if (result.get('status') == "Данные отправлены"):
-                    await message.answer(f"Данные аккаунта: \n ФИО : {result.get('name')} \n Адресс : {result.get('address')}\n Номер телефона : {result.get('phone_number')}")
-                else:
-                    await message.answer(result.get('status'))
+                return result.get('exists')
+
             else:
                 return {"status": "error", "message": f"Ошибка: {response.status_code}"}
-                
+                    
         except httpx.TimeoutException:
             return {"status": "error", "message": "Сервис аккаунтов не отвечает"}
         except Exception as e:
             return {"status": "error", "message": str(e)}
+        
+# Order
 
+async def order_service(message: Message, chat_id: int):
+    if check_account_service(message, chat_id):
+        await message.answer("Оформляем заказ...")
+    else:
+        await message.answer("Аккаунт не найден. Пожалуйста, заполните данные аккаунта перед заказом.")
 #__main__
-global telegram_bot
 
 async def run_fastapi():
     """Запуск FastAPI"""
@@ -306,7 +352,6 @@ async def run_aiogram():
     dp.message.register(handle_buttons, F.text)
 
 
-    telegram_bot = bot
     await dp.start_polling(bot, allowed_updates=["message"])
     
 async def main():

@@ -40,10 +40,27 @@ services:
      - app-network
 
     healthcheck:                                    
-      test: ["CMD-SHELL", "pg_isready -U admin"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+  
+  admin_service:
+    build:
+      context: .
+      dockerfile: ./admin_service/Dockerfile
+    image: admin_service:latest
+    container_name: admin_service
+
+    env_file:
+      - .env.db 
+
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+
+    networks:
+     - app-network
 
 #ОТЛАДКА БАЗЫ ДАННЫХ
   adminer:

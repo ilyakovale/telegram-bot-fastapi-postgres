@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, BigInteger, Boolean
-from account_service.database import Base
+from database import Base
 
 class Account(Base):
     __tablename__ = "accounts"

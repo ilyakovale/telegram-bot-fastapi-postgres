@@ -1,6 +1,20 @@
 from sqlalchemy import select
-from account_service.database import async_session
-from account_service.models import Account
+from database import async_session
+from models import Account
+
+async def check_account(chat_id: int):
+    async with async_session() as session:
+        result = await session.execute(
+            select(Account).where(Account.chat_id == chat_id)
+        )
+        return result.scalar_one_or_none() is not None
+
+async def get_account(chat_id: int):
+    async with async_session() as session:
+        result = await session.execute(
+            select(Account).where(Account.chat_id == chat_id)
+        )
+        return result.scalar_one_or_none()
 
 async def get_account(chat_id: int):
     async with async_session() as session:
