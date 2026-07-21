@@ -31,7 +31,19 @@ async def handle_buttons(message: Message, state: FSMContext):
             await get_all_accounts_service(message)
 
         elif text == "📦 Управление заказами":
-            pass
+            await admin_order_panel(message)
+
+        elif text == "Создать новый заказ":
+            await message.answer("Создаем заказ")
+
+        elif text == "Просмотреть заказы":
+            await message.answer("Просматриваем заказы")
+
+        elif text == "Удалить заказ":
+            await message.answer("Удаляем заказ")
+
+        elif text == "◀️ Назад":
+            await admin_panel(message)
 
 
     if text == "📦 Заказать":
@@ -69,7 +81,25 @@ async def admin_panel(message: Message):
         keyboard = [
             [KeyboardButton(text="📊 Статистика"), KeyboardButton(text="⚙️ Настройки")],
             [KeyboardButton(text="🔒 Управление пользователями")],
-            [KeyboardButton(text="📦 Управление заказами")]
+            [KeyboardButton(text="📦 Управление заказами")],
+        ]
+        
+        reply_markup = ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=False
+        )
+        
+        await message.answer(
+            "Панель администратора:",
+            reply_markup=reply_markup
+        )
+
+async def admin_order_panel(message: Message):
+    if await admin_check(message):
+        keyboard = [
+            [KeyboardButton(text="Создать новый заказ"),KeyboardButton(text="Просмотреть заказы")],
+            [KeyboardButton(text="Удалить заказ"), KeyboardButton(text="◀️ Назад")],
         ]
         
         reply_markup = ReplyKeyboardMarkup(
