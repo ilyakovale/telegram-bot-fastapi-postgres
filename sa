@@ -1,0 +1,24 @@
+[1mdiff --git a/gateway_service/__main__.py b/gateway_service/__main__.py[m
+[1mindex 19ae78d..5e368ce 100644[m
+[1m--- a/gateway_service/__main__.py[m
+[1m+++ b/gateway_service/__main__.py[m
+[36m@@ -39,6 +39,9 @@[m [masync def handle_buttons(message: Message, state: FSMContext):[m
+     [m
+     elif text == "ℹ️ Аккаунт":[m
+         await account_panel(message)[m
+[32m+[m[41m[m
+[32m+[m[32m    elif text == "Назад":[m[41m[m
+[32m+[m[32m        await start(message)[m[41m[m
+     [m
+     elif text == "📞 Контакты":[m
+         await message.answer(contacts)[m
+[36m@@ -222,8 +225,8 @@[m [masync def handle_confirmation(message: Message, state: FSMContext):[m
+ [m
+ async def account_panel(message: Message):[m
+     keyboard = [[m
+[31m-        [KeyboardButton(text="ℹ️ Данные аккаунта")],[m
+         [KeyboardButton(text="Изменить данные аккаунта")],[m
+[32m+[m[32m        [KeyboardButton(text="ℹ️ Данные аккаунта"),KeyboardButton(text="Назад")],[m[41m[m
+     ][m
+         [m
+     reply_markup = ReplyKeyboardMarkup([m

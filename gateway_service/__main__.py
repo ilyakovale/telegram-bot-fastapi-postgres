@@ -39,6 +39,9 @@ async def handle_buttons(message: Message, state: FSMContext):
     
     elif text == "ℹ️ Аккаунт":
         await account_panel(message)
+
+    elif text == "Назад":
+        await start(message)
     
     elif text == "📞 Контакты":
         await message.answer(contacts)
@@ -222,8 +225,8 @@ async def handle_confirmation(message: Message, state: FSMContext):
 
 async def account_panel(message: Message):
     keyboard = [
-        [KeyboardButton(text="ℹ️ Данные аккаунта")],
         [KeyboardButton(text="Изменить данные аккаунта")],
+        [KeyboardButton(text="ℹ️ Данные аккаунта"),KeyboardButton(text="Назад")],
     ]
         
     reply_markup = ReplyKeyboardMarkup(
