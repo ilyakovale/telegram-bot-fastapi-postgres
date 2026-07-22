@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from config import GetAccountMessageRequest, SetAccountMessageRequest, CheckAccountMessageRequest
 from database import engine, Base
-from crud import get_account, set_account,check_account
+from crud import get_account, set_account,check_account, get_all_accounts
 
 
 @asynccontextmanager
@@ -38,6 +38,23 @@ async def account_set(request: SetAccountMessageRequest):
         request.phone_number
     )
     return {"status": "Данные записаны"}
+
+@fapp.post("/all_accounts_get") 
+async def all_accounts_get():
+    accounts = await get_all_accounts()
+    accounts_data = []
+    for acc in accounts:
+        accounts_data.append({
+            "id": acc.chat_id,
+            "name": acc.name,           
+            "address": acc.address,      
+            "phone_number": acc.phone_number,
+        })
+        
+    return {
+        "status": "success",
+        "accounts": accounts_data,
+    }
 
 @fapp.post("/account_check")
 async def account_check(request: CheckAccountMessageRequest):

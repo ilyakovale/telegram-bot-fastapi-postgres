@@ -28,19 +28,29 @@ async def handle_buttons(message: Message, state: FSMContext):
             await message.answer("Открыть настройки...")
 
         elif text == "🔒 Управление пользователями":
+            await admin_account_panel(message)
+
+        elif text == "Заблокировать":
+            await message.answer("Блокирем пользователя")
+        
+        elif text == "Разблокировать":
+            await message.answer("Разблокирем пользователя")
+
+        elif text == "Просмотреть всех":
             await get_all_accounts_service(message)
 
         elif text == "📦 Управление заказами":
             await admin_order_panel(message)
 
         elif text == "Создать новый заказ":
-            await message.answer("Создаем заказ")
+            await handle_order_date_input(message, state)
 
         elif text == "Просмотреть заказы":
             await message.answer("Просматриваем заказы")
 
         elif text == "Удалить заказ":
             await message.answer("Удаляем заказ")
+
 
         elif text == "◀️ Назад":
             await admin_panel(message)
@@ -95,6 +105,24 @@ async def admin_panel(message: Message):
             reply_markup=reply_markup
         )
 
+async def admin_account_panel(message: Message):
+    if await admin_check(message):
+        keyboard = [
+            [KeyboardButton(text="Заблокировать"),KeyboardButton(text="Разблокировать")],
+            [KeyboardButton(text="Просмотреть всех"), KeyboardButton(text="◀️ Назад")],
+        ]
+        
+        reply_markup = ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=False
+        )
+        
+        await message.answer(
+            "Панель администратора:",
+            reply_markup=reply_markup
+        )
+
 async def admin_order_panel(message: Message):
     if await admin_check(message):
         keyboard = [
@@ -113,11 +141,27 @@ async def admin_order_panel(message: Message):
             reply_markup=reply_markup
         )
 
+class NewOrderStates(StatesGroup):
+    waiting_for_date = State()
+    waiting_for_last_date = State()
+    waiting_for_poduction = State()
+    waiting_for_confirmation = State()
+
+async def handle_new_order_input(message: Message, state:FSMContext):
+    if await admin_check(message):
+        message.answer("Введите дату заказа:", reply_markup=ReplyKeyboardRemove())
+        message.answer("число.месяц.год")
+        await state.set_state(AccountStates.waiting_for_date)
+
+async def handle_order_date_input(mess)
+
+        
+        
 async def get_all_accounts_service(message: Message):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
-                "http://admin_service:8003/all_accounts_get",
+                "http://account_service:8001/all_accounts_get",
                 timeout=10.0
             )
             
@@ -236,7 +280,7 @@ async def handle_phone_input(message: Message, state: FSMContext):
     await state.set_state(AccountStates.waiting_for_confirmation)
 
 
-async def handle_confirmation(message: Message, state: FSMContext):
+async def handle_confirmation_account(message: Message, state: FSMContext):
     if message.text == "Да":
         data = await state.get_data()
         await set_account_service(
@@ -381,7 +425,11 @@ async def run_aiogram():
     dp.message.register(handle_name_input, AccountStates.waiting_for_name)
     dp.message.register(handle_address_input, AccountStates.waiting_for_address)
     dp.message.register(handle_phone_input, AccountStates.waiting_for_phone)
-    dp.message.register(handle_confirmation, AccountStates.waiting_for_confirmation)
+    dp.message.register(handle_confirmation_account, AccountStates.waiting_for_confirmation)
+    dp.message.register(handle_order_date_input, NewOrderStates.waiting_for_date)
+    dp.message.register(handle_order_last_date_input, NewOrderStates.waiting_for_last_date)
+    dp.message.register(handle_order_produciton_input, NewOrderStates.waiting_for_poduction)
+    dp.message.register(handle_confirmation_order, NewOrderStates.waiting_for_confirmation)
     dp.message.register(handle_buttons, F.text)
 
 

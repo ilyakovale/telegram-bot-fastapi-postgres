@@ -11,6 +11,9 @@ class GetAccountMessageRequest(BaseModel):
     chat_id: int
     command: str     
 
+class GetAccountsMessageRequest(BaseModel):
+    chat_id: int
+
 class SetAccountMessageRequest(BaseModel):
     chat_id: int
     command: str    

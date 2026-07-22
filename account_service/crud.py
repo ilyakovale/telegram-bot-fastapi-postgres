@@ -16,12 +16,10 @@ async def get_account(chat_id: int):
         )
         return result.scalar_one_or_none()
 
-async def get_account(chat_id: int):
+async def get_all_accounts():
     async with async_session() as session:
-        result = await session.execute(
-            select(Account).where(Account.chat_id == chat_id)
-        )
-        return result.scalar_one_or_none()
+        result = await session.execute(select(Account))
+        return result.scalars().all()
 
 async def set_account(chat_id: int, name: str, address: str, phone_number: str):
     async with async_session() as session:
