@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: ./gateway_service/Dockerfile
     image: gateway_service:latest
-    container_name: gs
+    container_name: gateway_service
 
     networks:
      - app-network
@@ -15,7 +15,7 @@ services:
       context: .
       dockerfile: ./account_service/Dockerfile
     image: account_service:latest
-    container_name: as
+    container_name: account_service
 
     env_file:
       - .env.db
@@ -25,6 +25,40 @@ services:
         condition: service_healthy
     networks:
      - app-network
+  
+  admin_service:
+    build:
+      context: .
+      dockerfile: ./admin_service/Dockerfile
+    image: admin_service:latest
+    container_name: admin_service
+
+    env_file:
+      - .env.db 
+
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+
+    networks:
+     - app-network
+
+  order_service:
+    build:
+      context: .
+      dockerfile: ./order_service/Dockerfile
+    image: order_service:latest
+    container_name: order_service
+
+    env_file:
+      - .env.db
+    
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+
+    networks:
+      - app-network
   
   postgres_db:
     image: postgres:17-alpine
@@ -45,23 +79,6 @@ services:
       timeout: 5s
       retries: 5
   
-  admin_service:
-    build:
-      context: .
-      dockerfile: ./admin_service/Dockerfile
-    image: admin_service:latest
-    container_name: admin_service
-
-    env_file:
-      - .env.db 
-
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-
-    networks:
-     - app-network
-
 #ОТЛАДКА БАЗЫ ДАННЫХ
   adminer:
     image: adminer

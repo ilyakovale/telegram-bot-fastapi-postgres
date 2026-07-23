@@ -7,11 +7,6 @@ BASE_DIR = Path(__file__).parent
 print(f"Python ищет файлы в: {BASE_DIR}")
 
 sys.path.append(str((BASE_DIR.parent) / 'requests_templates')) 
-try:
-    from accountrequests import AccountMessageRequest
-except ImportError as e:
-    print(f"Ошибка при импорте accountrequests: {e}")
-    AccountMessageRequest = None
 
 load_dotenv(BASE_DIR / '.env.token')
 TOKEN = os.getenv("TOKEN")
@@ -31,3 +26,7 @@ if not contacts:
     print("Ошибка: Не найден файл contacts.txt или он пустой. Убедитесь, что файл существует и содержит контактную информацию.")
     exit(1)
 print("contacts.txt успешно загружен.")
+
+ACCOUNT_SERVICE_URL = "http://account_service:8001"
+ORDER_SERVICE_URL ="http://order_service:8002"
+ADMIN_SERVICE_URL = "http://admin_service:8003"
