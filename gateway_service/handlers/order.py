@@ -1,9 +1,13 @@
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram import Router
+
 from keyboards.order_menu import order_confirmation_keyboard
 from keyboards.main_menu import start_keyboard
 from services.account_service import check_account_exists
+
+router_order = Router()
 
 class NewOrderStates(StatesGroup):
     waiting_for_date = State()

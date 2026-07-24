@@ -10,6 +10,17 @@ def start_keyboard() -> ReplyKeyboardMarkup:
         one_time_keyboard=False
     )
 
+def start_admin_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📦 Заказать")],
+            [KeyboardButton(text="ℹ️ Аккаунт"), KeyboardButton(text="📞 Контакты")],
+            [KeyboardButton(text="Панель администратора")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+
 def back_to_main_keyboard() -> ReplyKeyboardMarkup:
     """Кнопка 'Назад' в главное меню (используется в подменю)."""
     return ReplyKeyboardMarkup(

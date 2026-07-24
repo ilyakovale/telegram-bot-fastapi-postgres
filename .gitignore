@@ -3,6 +3,8 @@ __pycache__/
 *.pyo
 *.pyd
 
-.env.token
-.env.db
+
+.env.*
+.env
+
 contacts.txt

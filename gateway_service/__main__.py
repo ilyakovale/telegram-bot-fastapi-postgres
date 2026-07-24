@@ -6,7 +6,6 @@ from aiogram import F
 from aiogram.filters import Command
 
 from dispatcher import dp, bot
-from handlers.common import start, help_command, handle_buttons
 from handlers.account import (
     AccountStates,
     handle_name_input,
@@ -14,8 +13,7 @@ from handlers.account import (
     handle_phone_input,
     handle_confirmation_account
 )
-from handlers.admin import admin_panel
-from handlers.orders import (
+from handlers.order import (
     NewOrderStates,
     handle_order_date,
     handle_order_last_date_input,
@@ -34,9 +32,6 @@ async def run_fastapi():
 
 async def main():
     # Регистрация обработчиков команд
-    dp.message.register(start, Command("start"))
-    dp.message.register(help_command, Command("help"))
-    dp.message.register(admin_panel, Command("admin_panel"))
 
     # Регистрация FSM-обработчиков аккаунта
     dp.message.register(handle_name_input, AccountStates.waiting_for_name)
@@ -51,15 +46,14 @@ async def main():
     dp.message.register(handle_confirmation_order, NewOrderStates.waiting_for_confirmation)
 
     # Универсальный обработчик всех текстовых сообщений (кнопки главного меню, админки и пр.)
-    dp.message.register(handle_buttons, F.text)
 
-    print("🚀 FastAPI запущен на http://gateway:8000")
+    print("🚀 FastAPI запущен на http://gateway_service:8000")
     print("Бот запущен...")
 
     # Одновременный запуск HTTP-сервера и поллинга Telegram
     await asyncio.gather(
         run_fastapi(),
-        dp.start_polling(bot, allowed_updates=["message"])
+        dp.start_polling(bot)
     )
 
 if __name__ == "__main__":

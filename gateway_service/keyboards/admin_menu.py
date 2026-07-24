@@ -4,9 +4,9 @@ def admin_main_keyboard() -> ReplyKeyboardMarkup:
     """Главная панель администратора."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📊 Статистика"), KeyboardButton(text="⚙️ Настройки")],
             [KeyboardButton(text="🔒 Управление пользователями")],
             [KeyboardButton(text="📦 Управление заказами")],
+            [KeyboardButton(text="Назад")],
         ],
         resize_keyboard=True,
         one_time_keyboard=False

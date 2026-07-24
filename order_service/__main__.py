@@ -3,30 +3,30 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 import httpx
 
-class OrderMessageReques(BaseModel):
-    chat_id: int
-    command: str
+# class OrderMessageReques(BaseModel):
+#     chat_id: int
+#     command: str
 
 fapp = FastAPI(title="Order Microservice")
 
 
 TELEGRAM_BOT_URL = "http://gs:8000"
 
-@fapp.post("/account") 
-async def get_account(request: OrderMessageReques):
+# @fapp.post("/account") 
+# async def get_account(request: OrderMessageReques):
     
-    if (request.command == "get_info"):
-        return {
-            "status": "Данные отправлены",
-            "name": "ivan ivanov",
-            "address": "pushkina",
-            "phone_number": "+375 00 000 00 00",
-        }
+#     if (request.command == "get_info"):
+#         return {
+#             "status": "Данные отправлены",
+#             "name": "ivan ivanov",
+#             "address": "pushkina",
+#             "phone_number": "+375 00 000 00 00",
+#         }
     
-    elif (request.command == "input_info"):
-        return {
-            "status": "Данные записаны"
-        }
+#     elif (request.command == "input_info"):
+#         return {
+#             "status": "Данные записаны"
+#         }
 
 
 if __name__ == "__main__":

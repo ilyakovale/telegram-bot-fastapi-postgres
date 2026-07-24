@@ -1,9 +1,13 @@
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram import Router, F
+
 from keyboards.account_menu import account_panel_keyboard, confirmation_keyboard
 from keyboards.main_menu import start_keyboard
 from services.account_service import get_account_info, set_account_info
+
+router_account = Router()
 
 class AccountStates(StatesGroup):
     waiting_for_name = State()
@@ -11,6 +15,7 @@ class AccountStates(StatesGroup):
     waiting_for_phone = State()
     waiting_for_confirmation = State()
 
+@router_account.message(F.text == "ℹ️ Аккаунт")
 async def account_panel(message: Message):
     await message.answer("Аккаунт:", reply_markup=account_panel_keyboard())
 
@@ -67,7 +72,7 @@ async def handle_confirmation_account(message: Message, state: FSMContext):
         )
         await state.clear()
         # Локальный импорт (без цикла)
-        from .common import start
+        from .gateway import start
         await start(message)
     else:
         await message.answer("Отменено. Введите данные заново.")
