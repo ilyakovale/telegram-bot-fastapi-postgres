@@ -15,14 +15,15 @@ class AccountStates(StatesGroup):
     waiting_for_phone = State()
     waiting_for_confirmation = State()
 
-@router_account.message(F.text == "ℹ️ Аккаунт")
+@router_account.message(F.text == 'ℹ️ Аккаунт')
 async def account_panel(message: Message):
     await message.answer("Аккаунт:", reply_markup=account_panel_keyboard())
 
-async def get_account_service(message: Message, chat_id: int, command: str):
-    # Делегируем в сервис
+@router_account.message(F.text == 'ℹ️ Данные аккаунта')
+async def get_account_service(message: Message, chat_id: int):
     await get_account_info(message, chat_id)
 
+@router_account.message(F.text == 'Изменить данные аккаунта')
 async def handle_account_input(message: Message, state: FSMContext):
     await message.answer("Введите ФИО\nПример: Иванов Иван Иванович", reply_markup=ReplyKeyboardRemove())
     await state.set_state(AccountStates.waiting_for_name)
@@ -72,7 +73,7 @@ async def handle_confirmation_account(message: Message, state: FSMContext):
         )
         await state.clear()
         # Локальный импорт (без цикла)
-        from .gateway import start
+        from .main import start
         await start(message)
     else:
         await message.answer("Отменено. Введите данные заново.")

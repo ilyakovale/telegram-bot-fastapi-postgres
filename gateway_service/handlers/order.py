@@ -1,9 +1,9 @@
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram import Router
+from aiogram import Router, F
 
-from keyboards.order_menu import order_confirmation_keyboard
+from keyboards.order_menu import order_panel_keyboard
 from keyboards.main_menu import start_keyboard
 from services.account_service import check_account_exists
 
@@ -15,6 +15,9 @@ class NewOrderStates(StatesGroup):
     waiting_for_production = State()
     waiting_for_confirmation = State()
 
+@router_order.message(F.text == "📦 Заказать")
+async def order_panel(message: Message):
+    await message.answer("Аккаунт:", reply_markup=order_panel_keyboard())
 async def order_service(message: Message, chat_id: int):
     exists = await check_account_exists(chat_id)
     if exists:
@@ -52,9 +55,9 @@ async def handle_confirmation_order(message: Message, state: FSMContext):
         # логика оформления заказа...
         await message.answer("Заказ оформлен (заглушка).", reply_markup=start_keyboard())
         await state.clear()
-        from .common import start
+        from .main import start
         await start(message)
     elif message.text == "Отменить":
         await state.clear()
-        from .common import start
+        from .main import start
         await start(message)
