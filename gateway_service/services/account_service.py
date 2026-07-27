@@ -88,6 +88,8 @@ async def get_all_accounts(message):
                     parts.append(
                         f"Аккаунт {i+1}:\n"
                         f"├─ ФИО: {acc.get('name', 'Не указано')}\n"
+                        f"├─ ID: {acc.get('chat_id', 'Не указано')}\n"
+                        f"├─ STATUS: {acc.get('block','Не указано')}\n"
                         f"├─ Адрес: {acc.get('address', 'Не указано')}\n"
                         f"└─ Телефон: {acc.get('phone_number', 'Не указано')}"
                     )
@@ -103,3 +105,43 @@ async def get_all_accounts(message):
             await message.answer("Сервис аккаунтов не отвечает")
         except Exception as e:
             await message.answer(f"Ошибка: {str(e)}")
+
+async def block_account(message, chat_id: int):
+    async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    f"{ACCOUNT_SERVICE_URL}/account_block",
+                    json={
+                        "chat_id": chat_id,
+                    },
+                    timeout=10.0
+                )
+                if response.status_code == 200:
+                    result = response.json()
+                    await message.answer(result.get('status', 'Успешно заблокировано'))
+                else:
+                    await message.answer(f"Ошибка блокировки: {response.status_code}")
+            except httpx.TimeoutException:
+                await message.answer("Сервис аккаунтов не отвечает")
+            except Exception as e:
+                await message.answer(f"Ошибка: {str(e)}")
+
+async def unblock_account(message, chat_id: int):
+    async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    f"{ACCOUNT_SERVICE_URL}/account_unblock",
+                    json={
+                        "chat_id": chat_id,
+                    },
+                    timeout=10.0
+                )
+                if response.status_code == 200:
+                    result = response.json()
+                    await message.answer(result.get('status', 'Успешно рааблокировано'))
+                else:
+                    await message.answer(f"Ошибка разблокировки: {response.status_code}")
+            except httpx.TimeoutException:
+                await message.answer("Сервис аккаунтов не отвечает")
+            except Exception as e:
+                await message.answer(f"Ошибка: {str(e)}")

@@ -8,8 +8,7 @@ class Account(Base):
     name = Column(String, nullable=False)
     address = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
-    verify = Column(Boolean, default=False)
-    rating = Column(String, default="0")
+    block = Column(Boolean, default=False)
 
 
     

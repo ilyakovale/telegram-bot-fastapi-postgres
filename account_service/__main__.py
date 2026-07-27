@@ -2,9 +2,9 @@ import os
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from config import GetAccountMessageRequest, SetAccountMessageRequest, CheckAccountMessageRequest
+from config import GetAccountMessageRequest, SetAccountMessageRequest, AccountID
 from database import engine, Base
-from crud import get_account, set_account,check_account, get_all_accounts
+from crud import get_account, set_account,check_account, get_all_accounts, block_account, unblock_account, check_block_account
 
 
 @asynccontextmanager
@@ -45,10 +45,11 @@ async def all_accounts_get():
     accounts_data = []
     for acc in accounts:
         accounts_data.append({
-            "id": acc.chat_id,
+            "chat_id": acc.chat_id,
             "name": acc.name,           
             "address": acc.address,      
             "phone_number": acc.phone_number,
+            "block" : acc.block,
         })
         
     return {
@@ -57,8 +58,18 @@ async def all_accounts_get():
     }
 
 @fapp.post("/account_check")
-async def account_check(request: CheckAccountMessageRequest):
+async def account_check(request: AccountID):
     exists = await check_account(request.chat_id)
+    return {"exists": exists}
+
+@fapp.post("/account_block")
+async def account_block(request: AccountID):
+    exists = await block_account(request.chat_id)
+    return {"exists": exists}
+
+@fapp.post("/account_unbock")
+async def account_unblock(request: AccountID):
+    exists = await unblock_account(request.chat_id)
     return {"exists": exists}
 
 if __name__ == "__main__":

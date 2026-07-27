@@ -32,7 +32,6 @@ async def set_account(chat_id: int, name: str, address: str, phone_number: str):
             account.name = name
             account.address = address
             account.phone_number = phone_number
-            account.verify = False 
         else:
             session.add(Account(
                 chat_id=chat_id,
@@ -41,3 +40,32 @@ async def set_account(chat_id: int, name: str, address: str, phone_number: str):
                 phone_number=phone_number
             ))
         await session.commit()
+
+async def block_account(chat_id: int):
+    async with async_session() as session:
+            result = await session.execute(
+                select(Account).where(Account.chat_id == chat_id)
+            )
+            account = result.scalar_one_or_none()
+    
+            if account:
+                account.block = True
+            await session.commit()
+
+async def unblock_account(chat_id: int):
+    async with async_session() as session:
+            result = await session.execute(
+                select(Account).where(Account.chat_id == chat_id)
+            )
+            account = result.scalar_one_or_none()
+    
+            if account:
+                account.block = False
+            await session.commit()
+
+async def check_block_account(chat_id: int):
+    async with async_session() as session:
+            result = await session.execute(
+                select(Account).where(Account.chat_id == chat_id)
+            )
+            return result.scalar_one_or_none().block

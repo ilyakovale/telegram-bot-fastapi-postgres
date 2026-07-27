@@ -1,12 +1,17 @@
 from aiogram.types import Message
 from aiogram import Router, F
-from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 
 from config import ADMINS
 from keyboards.admin_menu import admin_main_keyboard, admin_account_keyboard, admin_order_keyboard
-from services.account_service import get_all_accounts
+from services.account_service import get_all_accounts, block_account, unblock_account
 
 router_admin = Router()
+
+class AdminStates(StatesGroup):
+    waiting_for_id = State()
+
 
 async def admin_check(message: Message):
     return message.from_user.id in ADMINS
@@ -33,9 +38,23 @@ async def admin_order_panel(message: Message):
 
 
 @router_admin.message(F.text == 'Заблокировать')
-async def block_account_service(message: Message):
+async def ask_block_account_service(message: Message, state: FSMContext):
     if await admin_check(message):
-        pass
+        await message.answer("Введите ID:")
+        await state.set_state(AdminStates.waiting_for_id)
+
+async def block_account_service(message: Message, state: FSMContext):
+    if await admin_check(message):
+        if not message.text.isdigit():
+            await message.answer("ID должен быть числом. Попробуйте ещё раз:")
+            return
+        chat_id = int(message.text)
+        await block_account(message, chat_id)
+        await state.clear()
+        await message.answer(f"Пользователь {chat_id} заблокирован.", reply_markup=admin_main_keyboard())
+
+
+router_admin.message.register(block_account_service, AdminStates.waiting_for_id)
 
 @router_admin.message(F.text == 'Разблокировать')
 async def unblock_account_service(message: Message):

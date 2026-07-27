@@ -20,8 +20,8 @@ async def account_panel(message: Message):
     await message.answer("Аккаунт:", reply_markup=account_panel_keyboard())
 
 @router_account.message(F.text == 'ℹ️ Данные аккаунта')
-async def get_account_service(message: Message, chat_id: int):
-    await get_account_info(message, chat_id)
+async def get_account_service(message: Message):
+    await get_account_info(message, message.from_user.id)
 
 @router_account.message(F.text == 'Изменить данные аккаунта')
 async def handle_account_input(message: Message, state: FSMContext):

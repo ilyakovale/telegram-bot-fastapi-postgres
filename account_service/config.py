@@ -4,15 +4,12 @@ from dotenv import load_dotenv, dotenv_values
 from pathlib import Path
 from pydantic import BaseModel
 
-class CheckAccountMessageRequest(BaseModel):
+class AccountID(BaseModel):
     chat_id: int 
 
 class GetAccountMessageRequest(BaseModel):
     chat_id: int
     command: str     
-
-class GetAccountsMessageRequest(BaseModel):
-    chat_id: int
 
 class SetAccountMessageRequest(BaseModel):
     chat_id: int
@@ -27,3 +24,4 @@ print(f"Python ищет файлы в: {BASE_DIR}")
 
 load_dotenv(BASE_DIR / '.env.db')
 DB_URL = os.getenv("DB_URL")
+
