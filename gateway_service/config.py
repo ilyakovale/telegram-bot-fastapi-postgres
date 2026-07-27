@@ -27,9 +27,10 @@ if not contacts:
     exit(1)
 print("contacts.txt успешно загружен.")
 
+load_dotenv(BASE_DIR / '.env.url')
+
 ACCOUNT_SERVICE_URL = os.getenv("ACCOUNT_SERVICE_URL")
 ORDER_SERVICE_URL = os.getenv("ORDER_SERVICE_URL")
-ADMIN_SERVICE_URL = os.getenv("ADMIN_SERVICE_URL")
 
 if not ACCOUNT_SERVICE_URL:
     print("Ошибка: ACCOUNT_SERVICE_URL")
@@ -41,7 +42,3 @@ if not ORDER_SERVICE_URL:
     exit(1)
 print(f"ORDER_SERVICE_URL: {ORDER_SERVICE_URL}")
 
-if not ADMIN_SERVICE_URL:
-    print("Ошибка: ADMIN_SERVICE_URL")
-    exit(1)
-print(f"ADMIN_SERVICE_URL: {ADMIN_SERVICE_URL}")

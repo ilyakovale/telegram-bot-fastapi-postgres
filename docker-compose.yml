@@ -26,23 +26,6 @@ services:
     networks:
      - app-network
   
-  admin_service:
-    build:
-      context: .
-      dockerfile: ./admin_service/Dockerfile
-    image: admin_service:latest
-    container_name: admin_service
-
-    env_file:
-      - .env.db 
-
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-
-    networks:
-     - app-network
-
   order_service:
     build:
       context: .

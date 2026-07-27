@@ -10,8 +10,6 @@ import httpx
 fapp = FastAPI(title="Order Microservice")
 
 
-TELEGRAM_BOT_URL = "http://gs:8000"
-
 # @fapp.post("/account") 
 # async def get_account(request: OrderMessageReques):
     
