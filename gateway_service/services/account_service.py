@@ -138,7 +138,7 @@ async def unblock_account(message, chat_id: int):
                 )
                 if response.status_code == 200:
                     result = response.json()
-                    await message.answer(result.get('status', 'Успешно рааблокировано'))
+                    await message.answer(result.get('status', 'Успешно разблокировано'))
                 else:
                     await message.answer(f"Ошибка разблокировки: {response.status_code}")
             except httpx.TimeoutException:

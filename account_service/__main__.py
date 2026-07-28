@@ -67,7 +67,7 @@ async def account_block(request: AccountID):
     exists = await block_account(request.chat_id)
     return {"exists": exists}
 
-@fapp.post("/account_unbock")
+@fapp.post("/account_unblock")
 async def account_unblock(request: AccountID):
     exists = await unblock_account(request.chat_id)
     return {"exists": exists}
