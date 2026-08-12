@@ -8,3 +8,5 @@ __pycache__/
 .env
 
 contacts.txt
+
+MVP_PLAN.md
