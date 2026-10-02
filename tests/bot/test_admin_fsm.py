@@ -275,3 +275,72 @@ async def test_unauthorized_user_blocked_from_admin_actions(
 
     await get_all_orders_service(msg)
     assert len(mock_bot.call_args_list) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_order_api_error_response(
+    message_factory, fsm_context_factory, mock_bot, mock_api
+):
+    mock_api.post("http://order_service:8002/order_delete").respond(
+        status_code=404, json={"message": "Заказ не найден"}
+    )
+    msg = message_factory(text="999", is_admin=True)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AdminStates.waiting_for_delete_order)
+    await delete_order_service(msg, state)
+    current_state = await state.get_state()
+    assert current_state is None
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Ошибка удаления заказа:" in text for text in sent_texts)
+    assert not any("Заказ 999 успешно удален." in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_view_all_orders_api_error_response(message_factory, mock_bot, mock_api):
+    mock_api.post("http://order_service:8002/all_orders_get").respond(status_code=500)
+    msg = message_factory(text="Просмотреть заказы", is_admin=True)
+    await get_all_orders_service(msg)
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Ошибка загрузки заказов:" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_block_user_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None, is_admin=True)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AdminStates.waiting_for_block)
+    await block_account_service(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AdminStates.waiting_for_block.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("ID должен быть числом" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_unblock_user_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None, is_admin=True)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AdminStates.waiting_for_unblock)
+    await unblock_account_service(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AdminStates.waiting_for_unblock.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("ID должен быть числом" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_delete_order_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None, is_admin=True)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AdminStates.waiting_for_delete_order)
+    await delete_order_service(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AdminStates.waiting_for_delete_order.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("ID заказа должен быть числом" in text for text in sent_texts)

@@ -29,7 +29,9 @@ async def order_panel(message: Message):
     await message.answer("Раздел заказов:", reply_markup=order_panel_keyboard())
 
 
-@router_order.message(F.text == "Сделать новый заказ")
+@router_order.message(
+    (F.text == "Сделать новый заказ") | (F.text == "Создать новый заказ")
+)
 async def handle_order_start(message: Message, state: FSMContext):
     exists = await check_account_exists(message.from_user.id)
     if not exists:
@@ -45,6 +47,9 @@ async def handle_order_start(message: Message, state: FSMContext):
 
 
 async def handle_order_date(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer("Неверный формат даты. Введите дату в формате ДД.ММ.ГГГГ:")
+        return
     raw_date = message.text.strip()
     try:
         parsed_date = datetime.strptime(raw_date, "%d.%m.%Y").date()
@@ -62,11 +67,19 @@ async def handle_order_date(message: Message, state: FSMContext):
 
 
 async def handle_order_last_date(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer("Неверный формат даты. Введите дату в формате ДД.ММ.ГГГГ:")
+        return
     raw_last_date = message.text.strip()
     try:
         parsed_last_date = datetime.strptime(raw_last_date, "%d.%m.%Y").date()
     except ValueError:
         await message.answer("Неверный формат даты. Введите дату в формате ДД.ММ.ГГГГ:")
+        return
+    if parsed_last_date < date.today():
+        await message.answer(
+            "Конечная дата приема заявок не может быть в прошлом. Введите дату в формате ДД.ММ.ГГГГ:"
+        )
         return
     data = await state.get_data()
     order_date = datetime.strptime(data["date"], "%d.%m.%Y").date()
@@ -87,6 +100,9 @@ async def handle_order_last_date(message: Message, state: FSMContext):
 
 
 async def handle_product_choice(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer("Пожалуйста, выберите товар из предложенного списка:")
+        return
     data = await state.get_data()
     selected = data.get("selected_products", {})
     products = data.get("available_products", [])
@@ -131,6 +147,11 @@ async def handle_product_choice(message: Message, state: FSMContext):
 
 
 async def handle_quantity_input(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer(
+            "Количество должно быть целым положительным числом. Попробуйте снова:"
+        )
+        return
     text = message.text.strip()
     if not text.isdigit() or int(text) <= 0:
         await message.answer(
@@ -190,11 +211,22 @@ async def handle_confirmation_order(message: Message, state: FSMContext):
         from .main import start
 
         await start(message)
+    else:
+        await message.answer(
+            "Пожалуйста, подтвердите заказ кнопкой 'Подтвердить заказ' или отмените 'Отменить':",
+            reply_markup=order_confirmation_keyboard(),
+        )
 
 
 @router_order.message(F.text == "Посмотреть свои заказы")
 async def handle_view_my_orders(message: Message):
     result = await get_user_orders(message.from_user.id)
+    if isinstance(result, dict) and result.get("status") == "error":
+        await message.answer(
+            f"Не удалось загрузить заказы: {result.get('message', 'Ошибка сервиса')}",
+            reply_markup=order_panel_keyboard(),
+        )
+        return
     orders = result.get("orders", []) if isinstance(result, dict) else result
     if not orders:
         await message.answer(

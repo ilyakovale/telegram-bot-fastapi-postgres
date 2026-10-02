@@ -388,3 +388,159 @@ async def test_view_own_orders_with_data(message_factory, mock_bot, mock_api):
     sent_texts = get_sent_texts(mock_bot)
     assert any("Заказ #101 на 2026-12-31" in text for text in sent_texts)
     assert any("Молоко 1л: 3 шт." in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_last_date_past_date_rejected(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text="01.01.2020", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_last_date)
+    await state.update_data(date="31.12.2026")
+    await handle_order_last_date(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_last_date.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("не может быть в прошлом" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_last_date_same_as_order_date_accepted(
+    message_factory, fsm_context_factory, mock_bot, mock_api
+):
+    mock_api.post("http://order_service:8002/products_get").respond(
+        json={"products": [{"id": 1, "name": "Молоко 1л"}]}
+    )
+    msg = message_factory(text="31.12.2026", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_last_date)
+    await state.update_data(date="31.12.2026")
+    await handle_order_last_date(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_product_choice.state
+    data = await state.get_data()
+    assert data["last_date"] == "31.12.2026"
+
+
+@pytest.mark.asyncio
+async def test_order_start_via_admin_button(
+    message_factory, fsm_context_factory, mock_bot, mock_api
+):
+    mock_api.post("http://account_service:8001/account_check").respond(
+        json={"exists": True}
+    )
+    msg = message_factory(text="Создать новый заказ", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await handle_order_start(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_date.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Введите дату исполнения заказа" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_date_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None, user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_date)
+    await handle_order_date(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_date.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Неверный формат даты" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_last_date_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None, user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_last_date)
+    await state.update_data(date="31.12.2026")
+    await handle_order_last_date(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_last_date.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Неверный формат даты" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_product_choice_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None, user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_product_choice)
+    await state.update_data(available_products=[{"id": 1, "name": "Молоко 1л"}])
+    await handle_product_choice(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_product_choice.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("выберите товар из предложенного списка" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_quantity_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None, user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_quantity)
+    await state.update_data(
+        current_product="Молоко 1л",
+        available_products=[{"id": 1, "name": "Молоко 1л"}],
+        selected_products={},
+    )
+    await handle_quantity_input(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_quantity.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("целым положительным числом" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_confirmation_invalid_input_prompts(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text="Непонятно", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_confirmation)
+    await state.update_data(
+        date="31.12.2026", last_date="25.12.2026", selected_products={"Молоко 1л": 2}
+    )
+    await handle_confirmation_order(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_confirmation.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Пожалуйста, подтвердите заказ кнопкой" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_confirmation_api_error_response(
+    message_factory, fsm_context_factory, mock_bot, mock_api
+):
+    mock_api.post("http://order_service:8002/order_create").respond(status_code=500)
+    msg = message_factory(text="Подтвердить заказ", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_confirmation)
+    await state.update_data(
+        date="31.12.2026", last_date="25.12.2026", selected_products={"Молоко 1л": 2}
+    )
+    await handle_confirmation_order(msg, state)
+    current_state = await state.get_state()
+    assert current_state is None
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Ошибка оформления заказа:" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_view_own_orders_api_error_response(message_factory, mock_bot, mock_api):
+    mock_api.post("http://order_service:8002/orders_get").respond(status_code=502)
+    msg = message_factory(text="Посмотреть свои заказы", user_id=123)
+    await handle_view_my_orders(msg)
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Не удалось загрузить заказы:" in text for text in sent_texts)

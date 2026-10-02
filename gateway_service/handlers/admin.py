@@ -65,7 +65,7 @@ async def ask_block_account_service(message: Message, state: FSMContext):
 
 async def block_account_service(message: Message, state: FSMContext):
     if await admin_check(message):
-        if not message.text.isdigit():
+        if not message.text or not message.text.isdigit():
             await message.answer("ID должен быть числом. Попробуйте ещё раз:")
             return
         chat_id = int(message.text)
@@ -85,7 +85,7 @@ async def ask_unblock_account_service(message: Message, state: FSMContext):
 
 async def unblock_account_service(message: Message, state: FSMContext):
     if await admin_check(message):
-        if not message.text.isdigit():
+        if not message.text or not message.text.isdigit():
             await message.answer("ID должен быть числом. Попробуйте ещё раз:")
             return
         chat_id = int(message.text)
@@ -107,6 +107,12 @@ async def get_all_orders_service(message: Message):
     if not await admin_check(message):
         return
     result = await get_all_orders()
+    if isinstance(result, dict) and result.get("status") == "error":
+        await message.answer(
+            f"Ошибка загрузки заказов: {result.get('message', 'Ошибка сервиса')}",
+            reply_markup=admin_order_keyboard(),
+        )
+        return
     orders = result.get("orders", []) if isinstance(result, dict) else result
     if not orders:
         await message.answer("Заказы не найдены.", reply_markup=admin_order_keyboard())
@@ -149,15 +155,21 @@ async def ask_delete_order_service(message: Message, state: FSMContext):
 
 async def delete_order_service(message: Message, state: FSMContext):
     if await admin_check(message):
-        if not message.text.isdigit():
+        if not message.text or not message.text.isdigit():
             await message.answer("ID заказа должен быть числом. Попробуйте ещё раз:")
             return
         order_id = int(message.text)
-        await delete_order(order_id)
+        result = await delete_order(order_id)
         await state.clear()
-        await message.answer(
-            f"Заказ {order_id} успешно удален.", reply_markup=admin_order_keyboard()
-        )
+        if result.get("status") == "error":
+            await message.answer(
+                f"Ошибка удаления заказа: {result.get('message', 'Неизвестная ошибка')}",
+                reply_markup=admin_order_keyboard(),
+            )
+        else:
+            await message.answer(
+                f"Заказ {order_id} успешно удален.", reply_markup=admin_order_keyboard()
+            )
 
 
 router_admin.message.register(block_account_service, AdminStates.waiting_for_block)

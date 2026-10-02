@@ -34,6 +34,9 @@ async def handle_account_input(message: Message, state: FSMContext):
 
 
 async def handle_name_input(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer("Неверный формат. Введите ФИО (три слова через пробел):")
+        return
     parts = [p.strip() for p in message.text.split()]
     if len(parts) != 3:
         await message.answer("Неверный формат. Введите ФИО (три слова через пробел):")
@@ -44,14 +47,22 @@ async def handle_name_input(message: Message, state: FSMContext):
 
 
 async def handle_address_input(message: Message, state: FSMContext):
+    if not message.text or not message.text.strip():
+        await message.answer("Пожалуйста, введите адрес текстом:")
+        return
     await state.update_data(address=message.text.strip())
     await message.answer("Введите номер телефона\nПример: +375444444444")
     await state.set_state(AccountStates.waiting_for_phone)
 
 
 async def handle_phone_input(message: Message, state: FSMContext):
-    phone = message.text.replace(" ", "").replace("-", "")
-    if not phone.startswith("+") or not phone[1:].isdigit() or len(phone) < 10:
+    if not message.text:
+        await message.answer("Неверный формат номера. Пример: +375444444444")
+        return
+    phone = (
+        message.text.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    )
+    if not phone.startswith("+375") or not phone[1:].isdigit() or len(phone) != 13:
         await message.answer("Неверный формат номера. Пример: +375444444444")
         return
     phone_formatted = phone[:4] + " " + phone[4:6] + " " + phone[6:9] + " " + phone[9:]
@@ -82,9 +93,14 @@ async def handle_confirmation_account(message: Message, state: FSMContext):
         from .main import start
 
         await start(message)
-    else:
+    elif message.text == "Нет":
         await message.answer("Отменено. Введите данные заново.")
         await handle_account_input(message, state)
+    else:
+        await message.answer(
+            "Пожалуйста, подтвердите данные, выбрав 'Да' или 'Нет':",
+            reply_markup=confirmation_keyboard(),
+        )
 
 
 router_account.message.register(handle_name_input, AccountStates.waiting_for_name)

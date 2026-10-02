@@ -266,3 +266,110 @@ async def test_view_account_profile_not_found(message_factory, mock_bot, mock_ap
     await get_account_service(msg)
     sent_texts = get_sent_texts(mock_bot)
     assert any("Аккаунт не найден" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_phone_validation_fails_non_by_country_code(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text="+79991234567")
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AccountStates.waiting_for_phone)
+    await handle_phone_input(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AccountStates.waiting_for_phone.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Неверный формат номера" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_phone_validation_fails_too_long(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text="+37544123456789")
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AccountStates.waiting_for_phone)
+    await handle_phone_input(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AccountStates.waiting_for_phone.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Неверный формат номера" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_phone_validation_accepts_parentheses_and_dashes(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text="+375 (29) 111-22-33")
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AccountStates.waiting_for_phone)
+    await state.update_data(name="Иванов Иван Иванович", address="ул. Ленина, д. 1")
+    await handle_phone_input(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AccountStates.waiting_for_confirmation.state
+    data = await state.get_data()
+    assert data["phone_number"] == "+375 29 111 2233"
+
+
+@pytest.mark.asyncio
+async def test_confirmation_invalid_input_prompts_yes_no(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text="Не уверен", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(AccountStates.waiting_for_confirmation)
+    await state.update_data(
+        name="Иванов Иван Иванович",
+        address="ул. Ленина, д. 1",
+        phone_number="+375 44 123 4567",
+    )
+    await handle_confirmation_account(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AccountStates.waiting_for_confirmation.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any(
+        "Пожалуйста, подтвердите данные, выбрав 'Да' или 'Нет'" in text
+        for text in sent_texts
+    )
+
+
+@pytest.mark.asyncio
+async def test_name_validation_fails_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AccountStates.waiting_for_name)
+    await handle_name_input(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AccountStates.waiting_for_name.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Неверный формат. Введите ФИО" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_address_validation_fails_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AccountStates.waiting_for_address)
+    await handle_address_input(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AccountStates.waiting_for_address.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Пожалуйста, введите адрес текстом" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_phone_validation_fails_non_text_message(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text=None)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AccountStates.waiting_for_phone)
+    await handle_phone_input(msg, state)
+    current_state = await state.get_state()
+    assert current_state == AccountStates.waiting_for_phone.state
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Неверный формат номера" in text for text in sent_texts)
