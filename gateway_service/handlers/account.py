@@ -1,13 +1,12 @@
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram import Router, F
-
+from aiogram.types import Message, ReplyKeyboardRemove
 from keyboards.account_menu import account_panel_keyboard, confirmation_keyboard
-from keyboards.main_menu import start_keyboard
 from services.account_service import get_account_info, set_account_info
 
 router_account = Router()
+
 
 class AccountStates(StatesGroup):
     waiting_for_name = State()
@@ -15,18 +14,24 @@ class AccountStates(StatesGroup):
     waiting_for_phone = State()
     waiting_for_confirmation = State()
 
-@router_account.message(F.text == 'ℹ️ Аккаунт')
+
+@router_account.message(F.text == "ℹ️ Аккаунт")
 async def account_panel(message: Message):
     await message.answer("Аккаунт:", reply_markup=account_panel_keyboard())
 
-@router_account.message(F.text == 'ℹ️ Данные аккаунта')
+
+@router_account.message(F.text == "ℹ️ Данные аккаунта")
 async def get_account_service(message: Message):
     await get_account_info(message, message.from_user.id)
 
-@router_account.message(F.text == 'Изменить данные аккаунта')
+
+@router_account.message(F.text == "Изменить данные аккаунта")
 async def handle_account_input(message: Message, state: FSMContext):
-    await message.answer("Введите ФИО\nПример: Иванов Иван Иванович", reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        "Введите ФИО\nПример: Иванов Иван Иванович", reply_markup=ReplyKeyboardRemove()
+    )
     await state.set_state(AccountStates.waiting_for_name)
+
 
 async def handle_name_input(message: Message, state: FSMContext):
     parts = [p.strip() for p in message.text.split()]
@@ -37,10 +42,12 @@ async def handle_name_input(message: Message, state: FSMContext):
     await message.answer("Введите адрес\nПример: ул. Ленина, д. 1")
     await state.set_state(AccountStates.waiting_for_address)
 
+
 async def handle_address_input(message: Message, state: FSMContext):
     await state.update_data(address=message.text.strip())
     await message.answer("Введите номер телефона\nПример: +375444444444")
     await state.set_state(AccountStates.waiting_for_phone)
+
 
 async def handle_phone_input(message: Message, state: FSMContext):
     phone = message.text.replace(" ", "").replace("-", "")
@@ -56,7 +63,7 @@ async def handle_phone_input(message: Message, state: FSMContext):
         f"Адрес: {data['address']}\n"
         f"Телефон: {data['phone_number']}\n\n"
         f"Подтвердить?",
-        reply_markup=confirmation_keyboard()
+        reply_markup=confirmation_keyboard(),
     )
     await state.set_state(AccountStates.waiting_for_confirmation)
 
@@ -69,12 +76,20 @@ async def handle_confirmation_account(message: Message, state: FSMContext):
             message.from_user.id,
             data["name"],
             data["address"],
-            data["phone_number"]
+            data["phone_number"],
         )
         await state.clear()
-        # Локальный импорт (без цикла)
         from .main import start
+
         await start(message)
     else:
         await message.answer("Отменено. Введите данные заново.")
         await handle_account_input(message, state)
+
+
+router_account.message.register(handle_name_input, AccountStates.waiting_for_name)
+router_account.message.register(handle_address_input, AccountStates.waiting_for_address)
+router_account.message.register(handle_phone_input, AccountStates.waiting_for_phone)
+router_account.message.register(
+    handle_confirmation_account, AccountStates.waiting_for_confirmation
+)
