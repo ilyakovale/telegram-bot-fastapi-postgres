@@ -1,10 +1,21 @@
-from sqlalchemy import BigInteger, Boolean, Column, Date, ForeignKey, String, Table
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    Column,
+    Date,
+    ForeignKey,
+    String,
+    Table,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 
 try:
     from database import Base
 except (ImportError, ModuleNotFoundError):
     from order_service.database import Base
+
+JSON_STORAGE_TYPE = JSONB().with_variant(JSON(), "sqlite")
 
 Table(
     "accounts",
@@ -25,8 +36,8 @@ class Order(Base):
     chat_id = Column(BigInteger, ForeignKey("accounts.chat_id"), nullable=False)
     date = Column(Date, nullable=False)
     last_date_before_registration = Column(Date, nullable=False)
-    products_max = Column(JSONB, nullable=False, default=list)
-    products_current = Column(JSONB, nullable=False, default=list)
+    products_max = Column(JSON_STORAGE_TYPE, nullable=False, default=list)
+    products_current = Column(JSON_STORAGE_TYPE, nullable=False, default=list)
 
 
 class Product(Base):
@@ -36,4 +47,4 @@ class Product(Base):
     name = Column(String, nullable=False)
     unit = Column(String, default="шт")
     is_active = Column(Boolean, default=True)
-    available_dates = Column(JSONB, default=list)
+    available_dates = Column(JSON_STORAGE_TYPE, default=list)

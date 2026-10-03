@@ -55,6 +55,9 @@ class MockSession:
         self.added = []
         self.committed = False
         self.refreshed = []
+        self.rolled_back = False
+        self.statements = []
+        self.last_statement = None
 
     def add(self, obj):
         self.added.append(obj)
@@ -64,12 +67,17 @@ class MockSession:
     async def commit(self):
         self.committed = True
 
+    async def rollback(self):
+        self.rolled_back = True
+
     async def refresh(self, obj):
         self.refreshed.append(obj)
         if getattr(obj, "id", None) is None:
             obj.id = 100
 
     async def execute(self, statement):
+        self.statements.append(statement)
+        self.last_statement = statement
         return self.execute_result
 
 
@@ -719,3 +727,244 @@ async def test_app_lifespan():
         async with lifespan(fapp):
             pass
         mock_conn.run_sync.assert_called_once_with(Base.metadata.create_all)
+
+
+def test_metadata_ddl_generation_sqlite():
+    ddl_statements = []
+
+    def executor(sql, *args, **kwargs):
+        ddl_statements.append(str(sql.compile(dialect=mock_engine.dialect)).strip())
+
+    mock_engine = create_mock_engine("sqlite://", executor)
+    Base.metadata.create_all(mock_engine)
+    combined = "\n".join(ddl_statements)
+    assert "CREATE TABLE accounts" in combined
+    assert "CREATE TABLE products" in combined
+    assert "CREATE TABLE orders" in combined
+
+
+@pytest.mark.asyncio
+async def test_crud_sql_statement_clauses():
+    session = MockSession(execute_result=MockQueryResult(items=[], rowcount=1))
+
+    await get_orders_by_chat_id(888, session=session)
+    compiled_orders = str(
+        session.last_statement.compile(
+            dialect=create_mock_engine(
+                "postgresql+asyncpg://", lambda *a, **k: None
+            ).dialect
+        )
+    )
+    assert "orders.chat_id =" in compiled_orders
+    assert "ORDER BY orders.id DESC" in compiled_orders
+
+    await get_order_by_id(77, session=session)
+    compiled_get_one = str(
+        session.last_statement.compile(
+            dialect=create_mock_engine(
+                "postgresql+asyncpg://", lambda *a, **k: None
+            ).dialect
+        )
+    )
+    assert "orders.id =" in compiled_get_one
+
+    await delete_order_by_id(99, session=session)
+    compiled_delete = str(
+        session.last_statement.compile(
+            dialect=create_mock_engine(
+                "postgresql+asyncpg://", lambda *a, **k: None
+            ).dialect
+        )
+    )
+    assert "orders.id =" in compiled_delete
+
+    await get_available_products(session=session)
+    compiled_prods = str(
+        session.last_statement.compile(
+            dialect=create_mock_engine(
+                "postgresql+asyncpg://", lambda *a, **k: None
+            ).dialect
+        )
+    )
+    assert (
+        "products.is_active = true" in compiled_prods.lower()
+        or "is_active is true" in compiled_prods.lower()
+    )
+
+
+@pytest.mark.asyncio
+async def test_crud_inactive_products_filtered_out():
+    active_prod = Product(
+        id=1, name="Активный товар", is_active=True, available_dates=[]
+    )
+    inactive_prod = Product(
+        id=2, name="Неактивный товар", is_active=False, available_dates=[]
+    )
+    session = MockSession(
+        execute_result=MockQueryResult(items=[active_prod, inactive_prod])
+    )
+
+    products = await get_available_products(target_date="2026-12-31", session=session)
+    assert active_prod in products
+    assert inactive_prod not in products
+
+
+def test_schema_and_crud_extended_date_formats():
+    iso_with_time = "2026-12-31T15:30:00"
+    space_with_time = "2026-12-31 15:30:00"
+    dash_ru = "31-12-2026"
+    slash_iso = "2026/12/31"
+    slash_ru = "31/12/2026"
+
+    for val in (iso_with_time, space_with_time, dash_ru, slash_iso, slash_ru):
+        assert _normalize_date(val) == date(2026, 12, 31)
+
+    req = OrderCreateRequest(
+        chat_id=123,
+        date="2026-12-31T12:00:00",
+        last_date_before_registration="25-12-2026",
+    )
+    assert req.date == date(2026, 12, 31)
+    assert req.last_date_before_registration == date(2026, 12, 25)
+
+
+def test_schema_order_deadline_validation():
+    with pytest.raises(ValidationError):
+        OrderCreateRequest(
+            chat_id=123,
+            date="2026-12-10",
+            last_date_before_registration="2026-12-20",
+        )
+
+    same_day = OrderCreateRequest(
+        chat_id=123,
+        date="2026-12-20",
+        last_date_before_registration="2026-12-20",
+    )
+    assert same_day.date == same_day.last_date_before_registration
+
+
+def test_schema_product_name_validation():
+    with pytest.raises(ValidationError):
+        ProductCreateRequest(name="")
+
+    with pytest.raises(ValidationError):
+        ProductCreateRequest(name="   ")
+
+    prod = ProductCreateRequest(name="  Сметана  ")
+    assert prod.name == "Сметана"
+
+
+def test_large_jsonb_products_payload():
+    large_list = [
+        {"id": i, "name": f"Товар #{i}", "quantity": i % 10 + 1} for i in range(500)
+    ]
+    req = OrderCreateRequest(
+        chat_id=99999,
+        date="2026-12-31",
+        last_date_before_registration="2026-12-25",
+        products_max=large_list,
+        products_current=large_list,
+    )
+    assert len(req.products_max) == 500
+    assert len(req.products_current) == 500
+
+
+@pytest.mark.asyncio
+async def test_api_endpoints_error_handling():
+    with patch(
+        "order_service.__main__.create_order",
+        AsyncMock(side_effect=RuntimeError("DB write failure")),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            res = await ac.post(
+                "/order_create",
+                json={
+                    "chat_id": 1,
+                    "date": "2026-12-31",
+                    "last_date_before_registration": "2026-12-25",
+                },
+            )
+            assert res.status_code == 200
+            assert res.json()["status"] == "error"
+            assert "DB write failure" in res.json()["message"]
+
+    with patch(
+        "order_service.__main__.get_orders_by_chat_id",
+        AsyncMock(side_effect=RuntimeError("DB query failure")),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            res = await ac.post("/orders_get", json={"chat_id": 1})
+            assert res.status_code == 200
+            assert res.json()["status"] == "error"
+            assert res.json()["orders"] == []
+
+    with patch(
+        "order_service.__main__.get_all_orders",
+        AsyncMock(side_effect=RuntimeError("DB query failure")),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            res = await ac.post("/all_orders_get")
+            assert res.status_code == 200
+            assert res.json()["status"] == "error"
+            assert res.json()["orders"] == []
+
+    with patch(
+        "order_service.__main__.get_order_by_id",
+        AsyncMock(side_effect=RuntimeError("DB query failure")),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            res = await ac.post("/order_get", json={"order_id": 1})
+            assert res.status_code == 200
+            assert res.json()["status"] == "error"
+
+    with patch(
+        "order_service.__main__.delete_order_by_id",
+        AsyncMock(side_effect=RuntimeError("DB delete failure")),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            res = await ac.post("/order_delete", json={"order_id": 1})
+            assert res.status_code == 200
+            assert res.json()["status"] == "error"
+
+    with patch(
+        "order_service.__main__.get_available_products",
+        AsyncMock(side_effect=RuntimeError("DB query failure")),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            res = await ac.post("/products_get")
+            assert res.status_code == 200
+            assert res.json()["status"] == "error"
+            assert res.json()["products"] == []
+
+    with patch(
+        "order_service.__main__.create_product",
+        AsyncMock(side_effect=RuntimeError("DB write failure")),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            res = await ac.post("/product_create", json={"name": "Молоко"})
+            assert res.status_code == 200
+            assert res.json()["status"] == "error"
+
+
+@pytest.mark.asyncio
+async def test_crud_session_rollback_on_error():
+    mock_session = MockSession()
+    with pytest.raises(ZeroDivisionError):
+        async with _get_session(mock_session):
+            raise ZeroDivisionError("Forced error")
+    assert mock_session.rolled_back is True

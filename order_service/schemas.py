@@ -1,27 +1,39 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+def parse_date(val: Any) -> date | None:
+    if isinstance(val, datetime):
+        return val.date()
+    if isinstance(val, date):
+        return val
+    if not isinstance(val, str):
+        return None
+    clean = val.strip().split("T")[0].split(" ")[0]
+    if not clean:
+        return None
+    for sep in (".", "-", "/"):
+        if sep in clean:
+            parts = clean.split(sep)
+            if len(parts) == 3:
+                try:
+                    p0, p1, p2 = int(parts[0]), int(parts[1]), int(parts[2])
+                    if len(parts[0]) == 4:
+                        return date(p0, p1, p2)
+                    elif len(parts[2]) == 4 or p2 > 31:
+                        return date(p2, p1, p0)
+                    else:
+                        return date(p0, p1, p2)
+                except ValueError:
+                    pass
+    return None
 
 
 def _parse_date_input(v: Any) -> Any:
-    if isinstance(v, str):
-        clean = v.strip()
-        if "." in clean:
-            parts = clean.split(".")
-            if len(parts) == 3:
-                try:
-                    return date(int(parts[2]), int(parts[1]), int(parts[0]))
-                except ValueError:
-                    pass
-        elif "-" in clean:
-            parts = clean.split("-")
-            if len(parts) == 3:
-                try:
-                    return date(int(parts[0]), int(parts[1]), int(parts[2]))
-                except ValueError:
-                    pass
-    return v
+    parsed = parse_date(v)
+    return parsed if parsed is not None else v
 
 
 class OrderCreateRequest(BaseModel):
@@ -35,6 +47,12 @@ class OrderCreateRequest(BaseModel):
     @classmethod
     def validate_dates(cls, v: Any) -> Any:
         return _parse_date_input(v)
+
+    @model_validator(mode="after")
+    def validate_deadline(self) -> "OrderCreateRequest":
+        if self.last_date_before_registration > self.date:
+            raise ValueError("last_date_before_registration cannot be later than date")
+        return self
 
 
 class OrderResponse(BaseModel):
@@ -66,6 +84,14 @@ class ProductCreateRequest(BaseModel):
     unit: str = "шт"
     is_active: bool = True
     available_dates: list[Any] = Field(default_factory=list)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        clean = v.strip()
+        if not clean:
+            raise ValueError("Product name cannot be empty")
+        return clean
 
 
 class ProductResponse(BaseModel):
