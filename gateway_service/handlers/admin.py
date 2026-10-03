@@ -27,33 +27,25 @@ async def admin_check(message: Message):
 @router_admin.message(F.text == "Панель администратора")
 async def admin_panel(message: Message):
     if await admin_check(message):
-        await message.answer(
-            "Панель администратора:", reply_markup=admin_main_keyboard()
-        )
+        await message.answer("Панель администратора:", reply_markup=admin_main_keyboard())
 
 
 @router_admin.message(F.text == "◀️ Назад")
 async def back_to_admin(message: Message):
     if await admin_check(message):
-        await message.answer(
-            "Панель администратора:", reply_markup=admin_main_keyboard()
-        )
+        await message.answer("Панель администратора:", reply_markup=admin_main_keyboard())
 
 
 @router_admin.message(F.text == "🔒 Управление пользователями")
 async def admin_account_panel(message: Message):
     if await admin_check(message):
-        await message.answer(
-            "Управление пользователями:", reply_markup=admin_account_keyboard()
-        )
+        await message.answer("Управление пользователями:", reply_markup=admin_account_keyboard())
 
 
 @router_admin.message(F.text == "📦 Управление заказами")
 async def admin_order_panel(message: Message):
     if await admin_check(message):
-        await message.answer(
-            "Управление заказами:", reply_markup=admin_order_keyboard()
-        )
+        await message.answer("Управление заказами:", reply_markup=admin_order_keyboard())
 
 
 @router_admin.message(F.text == "Заблокировать")
@@ -125,9 +117,7 @@ async def get_all_orders_service(message: Message):
         ldate = o.get("last_date_before_registration", "—")
         prods = o.get("products_current", [])
         items_str = (
-            ", ".join(
-                [f"{p.get('name', 'Товар')}: {p.get('quantity', 1)} шт." for p in prods]
-            )
+            ", ".join([f"{p.get('name', 'Товар')}: {p.get('quantity', 1)} шт." for p in prods])
             if isinstance(prods, list)
             else str(prods)
         )
@@ -178,6 +168,4 @@ async def delete_order_service(message: Message, state: FSMContext):
 
 router_admin.message.register(block_account_service, AdminStates.waiting_for_block)
 router_admin.message.register(unblock_account_service, AdminStates.waiting_for_unblock)
-router_admin.message.register(
-    delete_order_service, AdminStates.waiting_for_delete_order
-)
+router_admin.message.register(delete_order_service, AdminStates.waiting_for_delete_order)

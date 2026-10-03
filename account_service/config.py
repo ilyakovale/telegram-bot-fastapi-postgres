@@ -25,6 +25,4 @@ class SetAccountMessageRequest(BaseModel):
 BASE_DIR = Path(__file__).parent
 
 load_dotenv(BASE_DIR / ".env.db")
-DB_URL = os.getenv(
-    "DB_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres"
-)
+DB_URL = os.getenv("DB_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres")

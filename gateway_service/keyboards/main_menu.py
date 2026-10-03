@@ -1,4 +1,5 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+
 
 def start_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
@@ -7,8 +8,9 @@ def start_keyboard() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="ℹ️ Аккаунт"), KeyboardButton(text="📞 Контакты")],
         ],
         resize_keyboard=True,
-        one_time_keyboard=False
+        one_time_keyboard=False,
     )
+
 
 def start_admin_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
@@ -18,13 +20,12 @@ def start_admin_keyboard() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="Панель администратора")],
         ],
         resize_keyboard=True,
-        one_time_keyboard=False
+        one_time_keyboard=False,
     )
+
 
 def back_to_main_keyboard() -> ReplyKeyboardMarkup:
     """Кнопка 'Назад' в главное меню (используется в подменю)."""
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="Назад")]],
-        resize_keyboard=True,
-        one_time_keyboard=False
+        keyboard=[[KeyboardButton(text="Назад")]], resize_keyboard=True, one_time_keyboard=False
     )

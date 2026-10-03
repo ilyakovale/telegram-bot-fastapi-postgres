@@ -59,9 +59,7 @@ async def handle_phone_input(message: Message, state: FSMContext):
     if not message.text:
         await message.answer("Неверный формат номера. Пример: +375444444444")
         return
-    phone = (
-        message.text.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-    )
+    phone = message.text.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
     if not phone.startswith("+375") or not phone[1:].isdigit() or len(phone) != 13:
         await message.answer("Неверный формат номера. Пример: +375444444444")
         return
@@ -106,6 +104,4 @@ async def handle_confirmation_account(message: Message, state: FSMContext):
 router_account.message.register(handle_name_input, AccountStates.waiting_for_name)
 router_account.message.register(handle_address_input, AccountStates.waiting_for_address)
 router_account.message.register(handle_phone_input, AccountStates.waiting_for_phone)
-router_account.message.register(
-    handle_confirmation_account, AccountStates.waiting_for_confirmation
-)
+router_account.message.register(handle_confirmation_account, AccountStates.waiting_for_confirmation)

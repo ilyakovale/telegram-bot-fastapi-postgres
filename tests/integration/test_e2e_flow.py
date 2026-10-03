@@ -1,8 +1,6 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from account_service.__main__ import fapp as account_app
-from account_service.models import Account
 from handlers.account import (
     AccountStates,
     account_panel,
@@ -33,9 +31,11 @@ from handlers.order import (
     order_panel,
 )
 from httpx import ASGITransport, AsyncClient
+
+from account_service.__main__ import fapp as account_app
+from account_service.models import Account
 from order_service.__main__ import fapp as order_app
 from order_service.models import Order, Product
-
 from tests.conftest import get_last_message, get_sent_texts
 
 
@@ -181,9 +181,7 @@ async def test_api_e2e_flow():
             assert resp_block.status_code == 200
             assert resp_block.json()["exists"] is True
 
-            resp_unblock = await acc_client.post(
-                "/account_unblock", json={"chat_id": 777}
-            )
+            resp_unblock = await acc_client.post("/account_unblock", json={"chat_id": 777})
             assert resp_unblock.status_code == 200
             assert resp_unblock.json()["exists"] is True
 
@@ -230,9 +228,7 @@ async def test_bot_conversational_e2e_flow(
     msg_ord_panel = message_factory(text="📦 Заказать", user_id=user_id)
     await order_panel(msg_ord_panel)
 
-    mock_api.post("http://account_service:8001/account_check").respond(
-        json={"exists": True}
-    )
+    mock_api.post("http://account_service:8001/account_check").respond(json={"exists": True})
     state_ord = fsm_context_factory(user_id=user_id)
     msg_new_ord = message_factory(text="Сделать новый заказ", user_id=user_id)
     await handle_order_start(msg_new_ord, state_ord)
@@ -253,9 +249,7 @@ async def test_bot_conversational_e2e_flow(
     )
     msg_last_date = message_factory(text="25.12.2026", user_id=user_id)
     await handle_order_last_date(msg_last_date, state_ord)
-    assert (
-        await state_ord.get_state() == NewOrderStates.waiting_for_product_choice.state
-    )
+    assert await state_ord.get_state() == NewOrderStates.waiting_for_product_choice.state
 
     msg_choose_milk = message_factory(text="Молоко 1л", user_id=user_id)
     await handle_product_choice(msg_choose_milk, state_ord)
@@ -263,9 +257,7 @@ async def test_bot_conversational_e2e_flow(
 
     msg_qty = message_factory(text="3", user_id=user_id)
     await handle_quantity_input(msg_qty, state_ord)
-    assert (
-        await state_ord.get_state() == NewOrderStates.waiting_for_product_choice.state
-    )
+    assert await state_ord.get_state() == NewOrderStates.waiting_for_product_choice.state
 
     msg_done = message_factory(text="✅ Закончить выбор", user_id=user_id)
     await handle_product_choice(msg_done, state_ord)
@@ -296,9 +288,7 @@ async def test_bot_conversational_e2e_flow(
     assert any("Заказ #101" in t for t in get_sent_texts(mock_bot))
 
     admin_id = 2112582980
-    msg_admin_panel = message_factory(
-        text="Панель администратора", user_id=admin_id, is_admin=True
-    )
+    msg_admin_panel = message_factory(text="Панель администратора", user_id=admin_id, is_admin=True)
     await admin_panel(msg_admin_panel)
     assert any("Панель администратора:" in t for t in get_sent_texts(mock_bot))
 
@@ -316,9 +306,7 @@ async def test_bot_conversational_e2e_flow(
             ],
         }
     )
-    msg_admin_view_accs = message_factory(
-        text="Просмотреть всех", user_id=admin_id, is_admin=True
-    )
+    msg_admin_view_accs = message_factory(text="Просмотреть всех", user_id=admin_id, is_admin=True)
     await get_all_accounts_service(msg_admin_view_accs)
     assert any("Сидоров Сидор Сидорович" in t for t in get_sent_texts(mock_bot))
 
@@ -347,9 +335,7 @@ async def test_bot_conversational_e2e_flow(
     await ask_delete_order_service(msg_del_req, state_admin)
     assert await state_admin.get_state() == AdminStates.waiting_for_delete_order.state
 
-    mock_api.post("http://order_service:8002/order_delete").respond(
-        json={"status": "success"}
-    )
+    mock_api.post("http://order_service:8002/order_delete").respond(json={"status": "success"})
     msg_del_id = message_factory(text="101", user_id=admin_id, is_admin=True)
     await delete_order_service(msg_del_id, state_admin)
     assert await state_admin.get_state() is None

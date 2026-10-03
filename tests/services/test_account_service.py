@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from httpx import ASGITransport, AsyncClient
+
 from account_service.__main__ import fapp, lifespan
 from account_service.crud import (
     _get_session,
@@ -14,7 +16,6 @@ from account_service.crud import (
     unblock_account,
 )
 from account_service.models import Account
-from httpx import ASGITransport, AsyncClient
 
 
 class MockQueryResult:
@@ -252,9 +253,7 @@ async def test_crud_get_session_fallback():
 
 @pytest.mark.asyncio
 async def test_api_health():
-    async with AsyncClient(
-        transport=ASGITransport(app=fapp), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
         response = await ac.get("/health")
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
@@ -269,15 +268,9 @@ async def test_api_account_get_success():
         phone_number="+375291112233",
         block=False,
     )
-    with patch(
-        "account_service.__main__.get_account", AsyncMock(return_value=fake_acc)
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
-            response = await ac.post(
-                "/account_get", json={"chat_id": 123, "command": "get_info"}
-            )
+    with patch("account_service.__main__.get_account", AsyncMock(return_value=fake_acc)):
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
+            response = await ac.post("/account_get", json={"chat_id": 123, "command": "get_info"})
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "Данные отправлены"
@@ -289,12 +282,8 @@ async def test_api_account_get_success():
 @pytest.mark.asyncio
 async def test_api_account_get_not_found():
     with patch("account_service.__main__.get_account", AsyncMock(return_value=None)):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
-            response = await ac.post(
-                "/account_get", json={"chat_id": 999, "command": "get_info"}
-            )
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
+            response = await ac.post("/account_get", json={"chat_id": 999, "command": "get_info"})
             assert response.status_code == 200
             assert response.json() == {"status": "Аккаунт не найден"}
 
@@ -302,9 +291,7 @@ async def test_api_account_get_not_found():
 @pytest.mark.asyncio
 async def test_api_account_set():
     with patch("account_service.__main__.set_account", AsyncMock()) as mock_set:
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             payload = {
                 "chat_id": 123,
                 "command": "input_info",
@@ -315,17 +302,13 @@ async def test_api_account_set():
             response = await ac.post("/account_set", json=payload)
             assert response.status_code == 200
             assert response.json() == {"status": "Данные записаны"}
-            mock_set.assert_called_once_with(
-                123, "Иванов Иван", "Минск", "+375291112233"
-            )
+            mock_set.assert_called_once_with(123, "Иванов Иван", "Минск", "+375291112233")
 
 
 @pytest.mark.asyncio
 async def test_api_all_accounts_get_empty():
     with patch("account_service.__main__.get_all_accounts", AsyncMock(return_value=[])):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/all_accounts_get")
             assert response.status_code == 200
             data = response.json()
@@ -346,9 +329,7 @@ async def test_api_all_accounts_get_with_data():
         "account_service.__main__.get_all_accounts",
         AsyncMock(return_value=[fake_acc]),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/all_accounts_get")
             assert response.status_code == 200
             data = response.json()
@@ -361,9 +342,7 @@ async def test_api_all_accounts_get_with_data():
 @pytest.mark.asyncio
 async def test_api_account_check_true():
     with patch("account_service.__main__.check_account", AsyncMock(return_value=True)):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/account_check", json={"chat_id": 123})
             assert response.status_code == 200
             assert response.json() == {"exists": True}
@@ -372,9 +351,7 @@ async def test_api_account_check_true():
 @pytest.mark.asyncio
 async def test_api_account_check_false():
     with patch("account_service.__main__.check_account", AsyncMock(return_value=False)):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/account_check", json={"chat_id": 999})
             assert response.status_code == 200
             assert response.json() == {"exists": False}
@@ -383,9 +360,7 @@ async def test_api_account_check_false():
 @pytest.mark.asyncio
 async def test_api_account_block():
     with patch("account_service.__main__.block_account", AsyncMock(return_value=True)):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/account_block", json={"chat_id": 123})
             assert response.status_code == 200
             assert response.json() == {"exists": True}
@@ -393,12 +368,8 @@ async def test_api_account_block():
 
 @pytest.mark.asyncio
 async def test_api_account_unblock():
-    with patch(
-        "account_service.__main__.unblock_account", AsyncMock(return_value=True)
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+    with patch("account_service.__main__.unblock_account", AsyncMock(return_value=True)):
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/account_unblock", json={"chat_id": 123})
             assert response.status_code == 200
             assert response.json() == {"exists": True}

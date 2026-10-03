@@ -13,9 +13,7 @@ def order_panel_keyboard() -> ReplyKeyboardMarkup:
     )
 
 
-def products_keyboard(
-    products: list, selected: dict | None = None
-) -> ReplyKeyboardMarkup:
+def products_keyboard(products: list, selected: dict | None = None) -> ReplyKeyboardMarkup:
     buttons = []
     selected = selected or {}
     for product in products:
@@ -24,16 +22,12 @@ def products_keyboard(
         buttons.append([KeyboardButton(text=label)])
     buttons.append([KeyboardButton(text="✅ Закончить выбор")])
     buttons.append([KeyboardButton(text="Отменить")])
-    return ReplyKeyboardMarkup(
-        keyboard=buttons, resize_keyboard=True, one_time_keyboard=False
-    )
+    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True, one_time_keyboard=False)
 
 
 def order_confirmation_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="Подтвердить заказ"), KeyboardButton(text="Отменить")]
-        ],
+        keyboard=[[KeyboardButton(text="Подтвердить заказ"), KeyboardButton(text="Отменить")]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )

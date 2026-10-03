@@ -99,12 +99,8 @@ async def test_block_user_non_digit_id(message_factory, fsm_context_factory, moc
 
 
 @pytest.mark.asyncio
-async def test_block_user_success(
-    message_factory, fsm_context_factory, mock_bot, mock_api
-):
-    mock_api.post("http://account_service:8001/account_block").respond(
-        json={"exists": True}
-    )
+async def test_block_user_success(message_factory, fsm_context_factory, mock_bot, mock_api):
+    mock_api.post("http://account_service:8001/account_block").respond(json={"exists": True})
     msg = message_factory(text="555", is_admin=True)
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AdminStates.waiting_for_block)
@@ -127,9 +123,7 @@ async def test_unblock_user_initiation(message_factory, fsm_context_factory, moc
 
 
 @pytest.mark.asyncio
-async def test_unblock_user_non_digit_id(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_unblock_user_non_digit_id(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="xyz", is_admin=True)
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AdminStates.waiting_for_unblock)
@@ -141,12 +135,8 @@ async def test_unblock_user_non_digit_id(
 
 
 @pytest.mark.asyncio
-async def test_unblock_user_success(
-    message_factory, fsm_context_factory, mock_bot, mock_api
-):
-    mock_api.post("http://account_service:8001/account_unblock").respond(
-        json={"exists": True}
-    )
+async def test_unblock_user_success(message_factory, fsm_context_factory, mock_bot, mock_api):
+    mock_api.post("http://account_service:8001/account_unblock").respond(json={"exists": True})
     msg = message_factory(text="555", is_admin=True)
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AdminStates.waiting_for_unblock)
@@ -183,9 +173,7 @@ async def test_view_all_users(message_factory, mock_bot, mock_api):
 
 @pytest.mark.asyncio
 async def test_view_all_orders_empty(message_factory, mock_bot, mock_api):
-    mock_api.post("http://order_service:8002/all_orders_get").respond(
-        json={"orders": []}
-    )
+    mock_api.post("http://order_service:8002/all_orders_get").respond(json={"orders": []})
     msg = message_factory(text="Просмотреть заказы", is_admin=True)
     await get_all_orders_service(msg)
     sent_texts = get_sent_texts(mock_bot)
@@ -228,9 +216,7 @@ async def test_delete_order_initiation(message_factory, fsm_context_factory, moc
 
 
 @pytest.mark.asyncio
-async def test_delete_order_non_digit_id(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_delete_order_non_digit_id(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="order_ten", is_admin=True)
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AdminStates.waiting_for_delete_order)
@@ -242,12 +228,8 @@ async def test_delete_order_non_digit_id(
 
 
 @pytest.mark.asyncio
-async def test_delete_order_success(
-    message_factory, fsm_context_factory, mock_bot, mock_api
-):
-    mock_api.post("http://order_service:8002/order_delete").respond(
-        json={"status": "success"}
-    )
+async def test_delete_order_success(message_factory, fsm_context_factory, mock_bot, mock_api):
+    mock_api.post("http://order_service:8002/order_delete").respond(json={"status": "success"})
     msg = message_factory(text="10", is_admin=True)
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AdminStates.waiting_for_delete_order)
@@ -305,9 +287,7 @@ async def test_view_all_orders_api_error_response(message_factory, mock_bot, moc
 
 
 @pytest.mark.asyncio
-async def test_block_user_non_text_message(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_block_user_non_text_message(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text=None, is_admin=True)
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AdminStates.waiting_for_block)
@@ -319,9 +299,7 @@ async def test_block_user_non_text_message(
 
 
 @pytest.mark.asyncio
-async def test_unblock_user_non_text_message(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_unblock_user_non_text_message(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text=None, is_admin=True)
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AdminStates.waiting_for_unblock)
@@ -333,9 +311,7 @@ async def test_unblock_user_non_text_message(
 
 
 @pytest.mark.asyncio
-async def test_delete_order_non_text_message(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_delete_order_non_text_message(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text=None, is_admin=True)
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AdminStates.waiting_for_delete_order)

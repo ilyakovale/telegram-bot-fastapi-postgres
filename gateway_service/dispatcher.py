@@ -3,7 +3,7 @@ import os
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from config import REDIS_URL, TOKEN
+from config import TOKEN
 from handlers.account import router_account
 from handlers.admin import router_admin
 from handlers.main import router_main
@@ -29,9 +29,7 @@ def create_storage():
         client.ping()
         return RedisStorage.from_url(REDIS_URL)
     except Exception as e:
-        logging.warning(
-            f"Не удалось подключиться к Redis ({e}), используется MemoryStorage"
-        )
+        logging.warning(f"Не удалось подключиться к Redis ({e}), используется MemoryStorage")
         return MemoryStorage()
 
 

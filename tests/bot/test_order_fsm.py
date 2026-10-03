@@ -30,9 +30,7 @@ async def test_order_panel_menu(message_factory, mock_bot):
 async def test_order_start_account_does_not_exist(
     message_factory, fsm_context_factory, mock_bot, mock_api
 ):
-    mock_api.post("http://account_service:8001/account_check").respond(
-        json={"exists": False}
-    )
+    mock_api.post("http://account_service:8001/account_check").respond(json={"exists": False})
     msg = message_factory(text="Сделать новый заказ", user_id=123)
     state = fsm_context_factory(user_id=123)
     await handle_order_start(msg, state)
@@ -43,12 +41,8 @@ async def test_order_start_account_does_not_exist(
 
 
 @pytest.mark.asyncio
-async def test_order_start_account_exists(
-    message_factory, fsm_context_factory, mock_bot, mock_api
-):
-    mock_api.post("http://account_service:8001/account_check").respond(
-        json={"exists": True}
-    )
+async def test_order_start_account_exists(message_factory, fsm_context_factory, mock_bot, mock_api):
+    mock_api.post("http://account_service:8001/account_check").respond(json={"exists": True})
     msg = message_factory(text="Сделать новый заказ", user_id=123)
     state = fsm_context_factory(user_id=123)
     await handle_order_start(msg, state)
@@ -59,9 +53,7 @@ async def test_order_start_account_exists(
 
 
 @pytest.mark.asyncio
-async def test_order_date_validation_invalid_format(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_order_date_validation_invalid_format(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="неверная_дата", user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_date)
@@ -73,9 +65,7 @@ async def test_order_date_validation_invalid_format(
 
 
 @pytest.mark.asyncio
-async def test_order_date_validation_past_date(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_order_date_validation_past_date(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="01.01.2020", user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_date)
@@ -187,9 +177,7 @@ async def test_product_choice_select_product_prompts_for_quantity(
 
 
 @pytest.mark.asyncio
-async def test_product_choice_invalid_product(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_product_choice_invalid_product(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="Несуществующий товар", user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_product_choice)
@@ -204,9 +192,7 @@ async def test_product_choice_invalid_product(
 
 
 @pytest.mark.asyncio
-async def test_quantity_input_invalid_non_numeric(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_quantity_input_invalid_non_numeric(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="три", user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_quantity)
@@ -333,9 +319,7 @@ async def test_order_confirmation_confirm_calls_create_order_api(
 
 
 @pytest.mark.asyncio
-async def test_order_confirmation_cancel(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_order_confirmation_cancel(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="Отменить", user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_confirmation)
@@ -391,9 +375,7 @@ async def test_view_own_orders_with_data(message_factory, mock_bot, mock_api):
 
 
 @pytest.mark.asyncio
-async def test_order_last_date_past_date_rejected(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_order_last_date_past_date_rejected(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="01.01.2020", user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_last_date)
@@ -427,9 +409,7 @@ async def test_order_last_date_same_as_order_date_accepted(
 async def test_order_start_via_admin_button(
     message_factory, fsm_context_factory, mock_bot, mock_api
 ):
-    mock_api.post("http://account_service:8001/account_check").respond(
-        json={"exists": True}
-    )
+    mock_api.post("http://account_service:8001/account_check").respond(json={"exists": True})
     msg = message_factory(text="Создать новый заказ", user_id=123)
     state = fsm_context_factory(user_id=123)
     await handle_order_start(msg, state)
@@ -440,9 +420,7 @@ async def test_order_start_via_admin_button(
 
 
 @pytest.mark.asyncio
-async def test_order_date_non_text_message(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_order_date_non_text_message(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text=None, user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_date)
@@ -454,9 +432,7 @@ async def test_order_date_non_text_message(
 
 
 @pytest.mark.asyncio
-async def test_order_last_date_non_text_message(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_order_last_date_non_text_message(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text=None, user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_last_date)
@@ -484,9 +460,7 @@ async def test_order_product_choice_non_text_message(
 
 
 @pytest.mark.asyncio
-async def test_order_quantity_non_text_message(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_order_quantity_non_text_message(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text=None, user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(NewOrderStates.waiting_for_quantity)

@@ -91,9 +91,7 @@ def test_order_model_structure():
     assert "products_max" in columns
     assert "products_current" in columns
     chat_id_col = columns["chat_id"]
-    assert any(
-        fk.target_fullname == "accounts.chat_id" for fk in chat_id_col.foreign_keys
-    )
+    assert any(fk.target_fullname == "accounts.chat_id" for fk in chat_id_col.foreign_keys)
 
 
 def test_product_model_structure():
@@ -421,24 +419,18 @@ async def test_crud_get_available_products():
     all_active = await get_available_products(target_date=None, session=session)
     assert len(all_active) == 5
 
-    for_new_year = await get_available_products(
-        target_date="2026-12-31", session=session
-    )
+    for_new_year = await get_available_products(target_date="2026-12-31", session=session)
     assert p1 in for_new_year
     assert p2 in for_new_year
     assert p4 in for_new_year
     assert p5 in for_new_year
     assert p3 not in for_new_year
 
-    for_new_year_ru = await get_available_products(
-        target_date="31.12.2026", session=session
-    )
+    for_new_year_ru = await get_available_products(target_date="31.12.2026", session=session)
     assert p2 in for_new_year_ru
     assert p4 in for_new_year_ru
 
-    for_date_obj = await get_available_products(
-        target_date=date(2026, 12, 31), session=session
-    )
+    for_date_obj = await get_available_products(target_date=date(2026, 12, 31), session=session)
     assert len(for_date_obj) == 4
 
     unparseable_target = await get_available_products(
@@ -463,9 +455,7 @@ async def test_crud_get_session_fallback():
 
 @pytest.mark.asyncio
 async def test_api_health():
-    async with AsyncClient(
-        transport=ASGITransport(app=fapp), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
         response = await ac.get("/health")
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
@@ -481,12 +471,8 @@ async def test_api_order_create():
         products_max=[{"name": "Молоко", "quantity": 1}],
         products_current=[{"name": "Молоко", "quantity": 1}],
     )
-    with patch(
-        "order_service.__main__.create_order", AsyncMock(return_value=fake_order)
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+    with patch("order_service.__main__.create_order", AsyncMock(return_value=fake_order)):
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             payload = {
                 "chat_id": 123,
                 "date": "2026-12-31",
@@ -512,12 +498,8 @@ async def test_api_order_create_russian_date_and_dict_products():
         products_max={"молоко": 2},
         products_current={"молоко": 2},
     )
-    with patch(
-        "order_service.__main__.create_order", AsyncMock(return_value=fake_order)
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+    with patch("order_service.__main__.create_order", AsyncMock(return_value=fake_order)):
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             payload = {
                 "chat_id": 456,
                 "date": "31.12.2026",
@@ -535,9 +517,7 @@ async def test_api_order_create_russian_date_and_dict_products():
 
 @pytest.mark.asyncio
 async def test_api_order_create_invalid_payload():
-    async with AsyncClient(
-        transport=ASGITransport(app=fapp), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
         response = await ac.post("/order_create", json={"invalid": "payload"})
         assert response.status_code == 422
 
@@ -556,9 +536,7 @@ async def test_api_orders_get():
         "order_service.__main__.get_orders_by_chat_id",
         AsyncMock(return_value=[fake_order]),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/orders_get", json={"chat_id": 123})
             assert response.status_code == 200
             data = response.json()
@@ -577,12 +555,8 @@ async def test_api_all_orders_get():
         products_max=[],
         products_current=[{"name": "Сыр 300г", "quantity": 1}],
     )
-    with patch(
-        "order_service.__main__.get_all_orders", AsyncMock(return_value=[fake_order])
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+    with patch("order_service.__main__.get_all_orders", AsyncMock(return_value=[fake_order])):
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/all_orders_get")
             assert response.status_code == 200
             data = response.json()
@@ -601,12 +575,8 @@ async def test_api_order_get_success():
         products_max=[{"name": "Творог", "quantity": 1}],
         products_current=[{"name": "Творог", "quantity": 1}],
     )
-    with patch(
-        "order_service.__main__.get_order_by_id", AsyncMock(return_value=fake_order)
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+    with patch("order_service.__main__.get_order_by_id", AsyncMock(return_value=fake_order)):
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/order_get", json={"order_id": 42})
             assert response.status_code == 200
             data = response.json()
@@ -618,9 +588,7 @@ async def test_api_order_get_success():
 @pytest.mark.asyncio
 async def test_api_order_get_not_found():
     with patch("order_service.__main__.get_order_by_id", AsyncMock(return_value=None)):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/order_get", json={"order_id": 999})
             assert response.status_code == 200
             data = response.json()
@@ -630,12 +598,8 @@ async def test_api_order_get_not_found():
 
 @pytest.mark.asyncio
 async def test_api_order_delete_success():
-    with patch(
-        "order_service.__main__.delete_order_by_id", AsyncMock(return_value=True)
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+    with patch("order_service.__main__.delete_order_by_id", AsyncMock(return_value=True)):
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/order_delete", json={"order_id": 10})
             assert response.status_code == 200
             assert response.json() == {"status": "success"}
@@ -643,12 +607,8 @@ async def test_api_order_delete_success():
 
 @pytest.mark.asyncio
 async def test_api_order_delete_not_found():
-    with patch(
-        "order_service.__main__.delete_order_by_id", AsyncMock(return_value=False)
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+    with patch("order_service.__main__.delete_order_by_id", AsyncMock(return_value=False)):
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/order_delete", json={"order_id": 999})
             assert response.status_code == 200
             data = response.json()
@@ -658,9 +618,7 @@ async def test_api_order_delete_not_found():
 
 @pytest.mark.asyncio
 async def test_api_order_delete_invalid_payload():
-    async with AsyncClient(
-        transport=ASGITransport(app=fapp), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
         response = await ac.post("/order_delete", json={"not_order_id": "bad"})
         assert response.status_code == 422
 
@@ -668,16 +626,12 @@ async def test_api_order_delete_invalid_payload():
 @pytest.mark.asyncio
 async def test_api_products_get():
     p1 = Product(id=1, name="Молоко 1л", unit="шт", is_active=True, available_dates=[])
-    p2 = Product(
-        id=2, name="Творог 200г", unit="шт", is_active=True, available_dates=[]
-    )
+    p2 = Product(id=2, name="Творог 200г", unit="шт", is_active=True, available_dates=[])
     with patch(
         "order_service.__main__.get_available_products",
         AsyncMock(return_value=[p1, p2]),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             response = await ac.post("/products_get", json={"order_date": "31.12.2026"})
             assert response.status_code == 200
             data = response.json()
@@ -700,9 +654,7 @@ async def test_api_product_create():
         available_dates=["2026-12-31"],
     )
     with patch("order_service.__main__.create_product", AsyncMock(return_value=p)):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             payload = {
                 "name": "Йогурт",
                 "unit": "шт",
@@ -750,9 +702,7 @@ async def test_crud_sql_statement_clauses():
     await get_orders_by_chat_id(888, session=session)
     compiled_orders = str(
         session.last_statement.compile(
-            dialect=create_mock_engine(
-                "postgresql+asyncpg://", lambda *a, **k: None
-            ).dialect
+            dialect=create_mock_engine("postgresql+asyncpg://", lambda *a, **k: None).dialect
         )
     )
     assert "orders.chat_id =" in compiled_orders
@@ -761,9 +711,7 @@ async def test_crud_sql_statement_clauses():
     await get_order_by_id(77, session=session)
     compiled_get_one = str(
         session.last_statement.compile(
-            dialect=create_mock_engine(
-                "postgresql+asyncpg://", lambda *a, **k: None
-            ).dialect
+            dialect=create_mock_engine("postgresql+asyncpg://", lambda *a, **k: None).dialect
         )
     )
     assert "orders.id =" in compiled_get_one
@@ -771,9 +719,7 @@ async def test_crud_sql_statement_clauses():
     await delete_order_by_id(99, session=session)
     compiled_delete = str(
         session.last_statement.compile(
-            dialect=create_mock_engine(
-                "postgresql+asyncpg://", lambda *a, **k: None
-            ).dialect
+            dialect=create_mock_engine("postgresql+asyncpg://", lambda *a, **k: None).dialect
         )
     )
     assert "orders.id =" in compiled_delete
@@ -781,9 +727,7 @@ async def test_crud_sql_statement_clauses():
     await get_available_products(session=session)
     compiled_prods = str(
         session.last_statement.compile(
-            dialect=create_mock_engine(
-                "postgresql+asyncpg://", lambda *a, **k: None
-            ).dialect
+            dialect=create_mock_engine("postgresql+asyncpg://", lambda *a, **k: None).dialect
         )
     )
     assert (
@@ -794,15 +738,9 @@ async def test_crud_sql_statement_clauses():
 
 @pytest.mark.asyncio
 async def test_crud_inactive_products_filtered_out():
-    active_prod = Product(
-        id=1, name="Активный товар", is_active=True, available_dates=[]
-    )
-    inactive_prod = Product(
-        id=2, name="Неактивный товар", is_active=False, available_dates=[]
-    )
-    session = MockSession(
-        execute_result=MockQueryResult(items=[active_prod, inactive_prod])
-    )
+    active_prod = Product(id=1, name="Активный товар", is_active=True, available_dates=[])
+    inactive_prod = Product(id=2, name="Неактивный товар", is_active=False, available_dates=[])
+    session = MockSession(execute_result=MockQueryResult(items=[active_prod, inactive_prod]))
 
     products = await get_available_products(target_date="2026-12-31", session=session)
     assert active_prod in products
@@ -856,9 +794,7 @@ def test_schema_product_name_validation():
 
 
 def test_large_jsonb_products_payload():
-    large_list = [
-        {"id": i, "name": f"Товар #{i}", "quantity": i % 10 + 1} for i in range(500)
-    ]
+    large_list = [{"id": i, "name": f"Товар #{i}", "quantity": i % 10 + 1} for i in range(500)]
     req = OrderCreateRequest(
         chat_id=99999,
         date="2026-12-31",
@@ -876,9 +812,7 @@ async def test_api_endpoints_error_handling():
         "order_service.__main__.create_order",
         AsyncMock(side_effect=RuntimeError("DB write failure")),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             res = await ac.post(
                 "/order_create",
                 json={
@@ -895,9 +829,7 @@ async def test_api_endpoints_error_handling():
         "order_service.__main__.get_orders_by_chat_id",
         AsyncMock(side_effect=RuntimeError("DB query failure")),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             res = await ac.post("/orders_get", json={"chat_id": 1})
             assert res.status_code == 200
             assert res.json()["status"] == "error"
@@ -907,9 +839,7 @@ async def test_api_endpoints_error_handling():
         "order_service.__main__.get_all_orders",
         AsyncMock(side_effect=RuntimeError("DB query failure")),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             res = await ac.post("/all_orders_get")
             assert res.status_code == 200
             assert res.json()["status"] == "error"
@@ -919,9 +849,7 @@ async def test_api_endpoints_error_handling():
         "order_service.__main__.get_order_by_id",
         AsyncMock(side_effect=RuntimeError("DB query failure")),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             res = await ac.post("/order_get", json={"order_id": 1})
             assert res.status_code == 200
             assert res.json()["status"] == "error"
@@ -930,9 +858,7 @@ async def test_api_endpoints_error_handling():
         "order_service.__main__.delete_order_by_id",
         AsyncMock(side_effect=RuntimeError("DB delete failure")),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             res = await ac.post("/order_delete", json={"order_id": 1})
             assert res.status_code == 200
             assert res.json()["status"] == "error"
@@ -941,9 +867,7 @@ async def test_api_endpoints_error_handling():
         "order_service.__main__.get_available_products",
         AsyncMock(side_effect=RuntimeError("DB query failure")),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             res = await ac.post("/products_get")
             assert res.status_code == 200
             assert res.json()["status"] == "error"
@@ -953,9 +877,7 @@ async def test_api_endpoints_error_handling():
         "order_service.__main__.create_product",
         AsyncMock(side_effect=RuntimeError("DB write failure")),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=fapp), base_url="http://test"
-        ) as ac:
+        async with AsyncClient(transport=ASGITransport(app=fapp), base_url="http://test") as ac:
             res = await ac.post("/product_create", json={"name": "Молоко"})
             assert res.status_code == 200
             assert res.json()["status"] == "error"

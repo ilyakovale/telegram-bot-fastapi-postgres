@@ -12,9 +12,7 @@ sys.path.append(str((BASE_DIR.parent) / "requests_templates"))
 load_dotenv(BASE_DIR / ".env.token")
 TOKEN = os.getenv("TOKEN")
 if not TOKEN:
-    print(
-        "Ошибка: Не найден токен бота. Убедитесь, что переменная TOKEN установлена в файле .env."
-    )
+    print("Ошибка: Не найден токен бота. Убедитесь, что переменная TOKEN установлена в файле .env.")
     exit(1)
 print(f"TOKEN: {TOKEN}")
 

@@ -17,11 +17,7 @@ from handlers.order import router_order
 def get_sent_texts(bot: AsyncMock) -> list[str]:
     texts = []
     for call in bot.call_args_list:
-        if (
-            call.args
-            and hasattr(call.args[0], "text")
-            and call.args[0].text is not None
-        ):
+        if call.args and hasattr(call.args[0], "text") and call.args[0].text is not None:
             texts.append(call.args[0].text)
     return texts
 
@@ -82,9 +78,7 @@ def message_factory(mock_bot):
             message_id=1,
             date=datetime.now(timezone.utc),
             chat=Chat(id=cid, type="private"),
-            from_user=User(
-                id=uid, is_bot=False, first_name="Admin" if is_admin else "TestUser"
-            ),
+            from_user=User(id=uid, is_bot=False, first_name="Admin" if is_admin else "TestUser"),
             text=text,
         )
         return msg.as_(target_bot)

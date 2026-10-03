@@ -8,7 +8,6 @@ try:
     from crud import (
         block_account,
         check_account,
-        check_block_account,
         get_account,
         get_all_accounts,
         set_account,

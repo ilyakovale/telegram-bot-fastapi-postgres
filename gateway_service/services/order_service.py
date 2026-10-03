@@ -58,9 +58,7 @@ async def get_user_orders(chat_id: int) -> dict:
 async def get_all_orders() -> dict:
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(
-                f"{ORDER_SERVICE_URL}/all_orders_get", timeout=10.0
-            )
+            response = await client.post(f"{ORDER_SERVICE_URL}/all_orders_get", timeout=10.0)
             if response.status_code == 200:
                 return response.json()
             return {

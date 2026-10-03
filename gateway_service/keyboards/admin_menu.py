@@ -1,4 +1,5 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+
 
 def admin_main_keyboard() -> ReplyKeyboardMarkup:
     """Главная панель администратора."""
@@ -9,8 +10,9 @@ def admin_main_keyboard() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="Назад")],
         ],
         resize_keyboard=True,
-        one_time_keyboard=False
+        one_time_keyboard=False,
     )
+
 
 def admin_account_keyboard() -> ReplyKeyboardMarkup:
     """Подменю управления пользователями."""
@@ -20,8 +22,9 @@ def admin_account_keyboard() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="Просмотреть всех"), KeyboardButton(text="◀️ Назад")],
         ],
         resize_keyboard=True,
-        one_time_keyboard=False
+        one_time_keyboard=False,
     )
+
 
 def admin_order_keyboard() -> ReplyKeyboardMarkup:
     """Подменю управления заказами."""
@@ -31,5 +34,5 @@ def admin_order_keyboard() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="Удалить заказ"), KeyboardButton(text="◀️ Назад")],
         ],
         resize_keyboard=True,
-        one_time_keyboard=False
+        one_time_keyboard=False,
     )

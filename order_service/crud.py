@@ -122,9 +122,7 @@ async def get_available_products(
 ) -> list[Product]:
     async with _get_session(session) as s:
         result = await s.execute(
-            select(Product)
-            .where(Product.is_active.is_(True))
-            .order_by(Product.id.asc())
+            select(Product).where(Product.is_active.is_(True)).order_by(Product.id.asc())
         )
         products = list(result.scalars().all())
         if not target_date:

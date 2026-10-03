@@ -29,9 +29,7 @@ async def order_panel(message: Message):
     await message.answer("Раздел заказов:", reply_markup=order_panel_keyboard())
 
 
-@router_order.message(
-    (F.text == "Сделать новый заказ") | (F.text == "Создать новый заказ")
-)
+@router_order.message((F.text == "Сделать новый заказ") | (F.text == "Создать новый заказ"))
 async def handle_order_start(message: Message, state: FSMContext):
     exists = await check_account_exists(message.from_user.id)
     if not exists:
@@ -125,17 +123,13 @@ async def handle_product_choice(message: Message, state: FSMContext):
         return
     if message.text == "Отменить":
         await state.clear()
-        await message.answer(
-            "Оформление заказа отменено.", reply_markup=start_keyboard()
-        )
+        await message.answer("Оформление заказа отменено.", reply_markup=start_keyboard())
         from .main import start
 
         await start(message)
         return
     clean_name = message.text.split(" (")[0].strip()
-    valid_names = [
-        p.get("name", "") if isinstance(p, dict) else str(p) for p in products
-    ]
+    valid_names = [p.get("name", "") if isinstance(p, dict) else str(p) for p in products]
     if clean_name not in valid_names:
         await message.answer("Пожалуйста, выберите товар из предложенного списка:")
         return
@@ -148,15 +142,11 @@ async def handle_product_choice(message: Message, state: FSMContext):
 
 async def handle_quantity_input(message: Message, state: FSMContext):
     if not message.text:
-        await message.answer(
-            "Количество должно быть целым положительным числом. Попробуйте снова:"
-        )
+        await message.answer("Количество должно быть целым положительным числом. Попробуйте снова:")
         return
     text = message.text.strip()
     if not text.isdigit() or int(text) <= 0:
-        await message.answer(
-            "Количество должно быть целым положительным числом. Попробуйте снова:"
-        )
+        await message.answer("Количество должно быть целым положительным числом. Попробуйте снова:")
         return
     qty = int(text)
     data = await state.get_data()
@@ -175,15 +165,10 @@ async def handle_quantity_input(message: Message, state: FSMContext):
 async def handle_confirmation_order(message: Message, state: FSMContext):
     if message.text == "Подтвердить заказ":
         data = await state.get_data()
-        order_date_iso = datetime.strptime(data["date"], "%d.%m.%Y").strftime(
-            "%Y-%m-%d"
-        )
-        last_date_iso = datetime.strptime(data["last_date"], "%d.%m.%Y").strftime(
-            "%Y-%m-%d"
-        )
+        order_date_iso = datetime.strptime(data["date"], "%d.%m.%Y").strftime("%Y-%m-%d")
+        last_date_iso = datetime.strptime(data["last_date"], "%d.%m.%Y").strftime("%Y-%m-%d")
         products_list = [
-            {"name": k, "quantity": v}
-            for k, v in data.get("selected_products", {}).items()
+            {"name": k, "quantity": v} for k, v in data.get("selected_products", {}).items()
         ]
         order_data = {
             "date": order_date_iso,
@@ -199,9 +184,7 @@ async def handle_confirmation_order(message: Message, state: FSMContext):
                 reply_markup=start_keyboard(),
             )
         else:
-            await message.answer(
-                "Заказ успешно оформлен!", reply_markup=start_keyboard()
-            )
+            await message.answer("Заказ успешно оформлен!", reply_markup=start_keyboard())
         from .main import start
 
         await start(message)
@@ -229,9 +212,7 @@ async def handle_view_my_orders(message: Message):
         return
     orders = result.get("orders", []) if isinstance(result, dict) else result
     if not orders:
-        await message.answer(
-            "У вас нет активных заказов.", reply_markup=order_panel_keyboard()
-        )
+        await message.answer("У вас нет активных заказов.", reply_markup=order_panel_keyboard())
         return
     parts = []
     for order in orders:
@@ -239,12 +220,7 @@ async def handle_view_my_orders(message: Message):
         order_date = order.get("date", "—")
         products = order.get("products_current", [])
         items_str = (
-            ", ".join(
-                [
-                    f"{p.get('name', 'Товар')}: {p.get('quantity', 1)} шт."
-                    for p in products
-                ]
-            )
+            ", ".join([f"{p.get('name', 'Товар')}: {p.get('quantity', 1)} шт." for p in products])
             if isinstance(products, list)
             else str(products)
         )
@@ -254,15 +230,7 @@ async def handle_view_my_orders(message: Message):
 
 
 router_order.message.register(handle_order_date, NewOrderStates.waiting_for_date)
-router_order.message.register(
-    handle_order_last_date, NewOrderStates.waiting_for_last_date
-)
-router_order.message.register(
-    handle_product_choice, NewOrderStates.waiting_for_product_choice
-)
-router_order.message.register(
-    handle_quantity_input, NewOrderStates.waiting_for_quantity
-)
-router_order.message.register(
-    handle_confirmation_order, NewOrderStates.waiting_for_confirmation
-)
+router_order.message.register(handle_order_last_date, NewOrderStates.waiting_for_last_date)
+router_order.message.register(handle_product_choice, NewOrderStates.waiting_for_product_choice)
+router_order.message.register(handle_quantity_input, NewOrderStates.waiting_for_quantity)
+router_order.message.register(handle_confirmation_order, NewOrderStates.waiting_for_confirmation)

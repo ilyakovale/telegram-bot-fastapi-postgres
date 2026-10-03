@@ -62,9 +62,7 @@ async def test_registration_initiation(message_factory, fsm_context_factory, moc
 
 
 @pytest.mark.asyncio
-async def test_name_validation_fails_with_one_word(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_name_validation_fails_with_one_word(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="Иванов")
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AccountStates.waiting_for_name)
@@ -76,9 +74,7 @@ async def test_name_validation_fails_with_one_word(
 
 
 @pytest.mark.asyncio
-async def test_name_validation_fails_with_two_words(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_name_validation_fails_with_two_words(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="Иван Иванов")
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AccountStates.waiting_for_name)
@@ -120,9 +116,7 @@ async def test_name_validation_success_advances_to_address(
 
 
 @pytest.mark.asyncio
-async def test_address_input_advances_to_phone(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_address_input_advances_to_phone(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="г. Минск, пр. Независимости, 4")
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AccountStates.waiting_for_address)
@@ -136,9 +130,7 @@ async def test_address_input_advances_to_phone(
 
 
 @pytest.mark.asyncio
-async def test_phone_validation_fails_without_plus(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_phone_validation_fails_without_plus(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="375291234567")
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AccountStates.waiting_for_phone)
@@ -150,9 +142,7 @@ async def test_phone_validation_fails_without_plus(
 
 
 @pytest.mark.asyncio
-async def test_phone_validation_fails_short_number(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_phone_validation_fails_short_number(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="+37529")
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AccountStates.waiting_for_phone)
@@ -164,9 +154,7 @@ async def test_phone_validation_fails_short_number(
 
 
 @pytest.mark.asyncio
-async def test_phone_validation_fails_with_letters(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_phone_validation_fails_with_letters(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="+375abc444444")
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AccountStates.waiting_for_phone)
@@ -220,9 +208,7 @@ async def test_confirmation_yes_saves_account_data(
 
 
 @pytest.mark.asyncio
-async def test_confirmation_no_cancels_and_restarts(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_confirmation_no_cancels_and_restarts(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="Нет", user_id=123)
     state = fsm_context_factory(user_id=123)
     await state.set_state(AccountStates.waiting_for_confirmation)
@@ -283,9 +269,7 @@ async def test_phone_validation_fails_non_by_country_code(
 
 
 @pytest.mark.asyncio
-async def test_phone_validation_fails_too_long(
-    message_factory, fsm_context_factory, mock_bot
-):
+async def test_phone_validation_fails_too_long(message_factory, fsm_context_factory, mock_bot):
     msg = message_factory(text="+37544123456789")
     state = fsm_context_factory(user_id=msg.from_user.id)
     await state.set_state(AccountStates.waiting_for_phone)
@@ -328,8 +312,7 @@ async def test_confirmation_invalid_input_prompts_yes_no(
     assert current_state == AccountStates.waiting_for_confirmation.state
     sent_texts = get_sent_texts(mock_bot)
     assert any(
-        "Пожалуйста, подтвердите данные, выбрав 'Да' или 'Нет'" in text
-        for text in sent_texts
+        "Пожалуйста, подтвердите данные, выбрав 'Да' или 'Нет'" in text for text in sent_texts
     )
 
 

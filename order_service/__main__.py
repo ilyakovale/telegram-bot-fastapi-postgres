@@ -75,9 +75,7 @@ async def handle_order_create(request: OrderCreateRequest):
                 "id": order.id,
                 "chat_id": order.chat_id,
                 "date": str(order.date),
-                "last_date_before_registration": str(
-                    order.last_date_before_registration
-                ),
+                "last_date_before_registration": str(order.last_date_before_registration),
                 "products_max": order.products_max,
                 "products_current": order.products_current,
             },
@@ -159,9 +157,7 @@ async def handle_order_get(request: OrderIDRequest):
                 "id": order.id,
                 "chat_id": order.chat_id,
                 "date": str(order.date),
-                "last_date_before_registration": str(
-                    order.last_date_before_registration
-                ),
+                "last_date_before_registration": str(order.last_date_before_registration),
                 "products_max": order.products_max,
                 "products_current": order.products_current,
             },
