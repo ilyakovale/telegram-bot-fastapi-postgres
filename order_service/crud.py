@@ -12,6 +12,26 @@ except (ImportError, ModuleNotFoundError):
     from order_service.models import Order, Product
 
 
+def _normalize_date(val: date | str) -> date:
+    if isinstance(val, (date, datetime)):
+        return (
+            val
+            if isinstance(val, date) and not isinstance(val, datetime)
+            else val.date()
+        )
+    if isinstance(val, str):
+        clean = val.strip()
+        if "." in clean:
+            parts = clean.split(".")
+            if len(parts) == 3:
+                return date(int(parts[2]), int(parts[1]), int(parts[0]))
+        if "-" in clean:
+            parts = clean.split("-")
+            if len(parts) == 3:
+                return date(int(parts[0]), int(parts[1]), int(parts[2]))
+    raise ValueError(f"Invalid date: {val}")
+
+
 @asynccontextmanager
 async def _get_session(session=None):
     if session is not None:
@@ -23,17 +43,19 @@ async def _get_session(session=None):
 
 async def create_order(
     chat_id: int,
-    order_date: date,
-    last_date_before_registration: date,
+    order_date: date | str,
+    last_date_before_registration: date | str,
     products_max: list[Any] | dict[str, Any],
     products_current: list[Any] | dict[str, Any],
     session=None,
 ) -> Order:
+    parsed_date = _normalize_date(order_date)
+    parsed_last_date = _normalize_date(last_date_before_registration)
     async with _get_session(session) as s:
         order = Order(
             chat_id=chat_id,
-            date=order_date,
-            last_date_before_registration=last_date_before_registration,
+            date=parsed_date,
+            last_date_before_registration=parsed_last_date,
             products_max=products_max,
             products_current=products_current,
         )
@@ -67,7 +89,7 @@ async def delete_order_by_id(order_id: int, session=None) -> bool:
     async with _get_session(session) as s:
         result = await s.execute(delete(Order).where(Order.id == order_id))
         await s.commit()
-        return result.rowcount > 0
+        return bool(result.rowcount and result.rowcount > 0)
 
 
 async def create_product(
@@ -102,7 +124,9 @@ async def get_available_products(
 ) -> list[Product]:
     async with _get_session(session) as s:
         result = await s.execute(
-            select(Product).where(Product.is_active == True).order_by(Product.id.asc())
+            select(Product)
+            .where(Product.is_active.is_(True))
+            .order_by(Product.id.asc())
         )
         products = list(result.scalars().all())
         if not target_date:
@@ -144,6 +168,38 @@ async def get_available_products(
             if not dates:
                 filtered.append(product)
                 continue
-            if any(str(d).strip() in target_candidates for d in dates):
+            if isinstance(dates, str) or not isinstance(dates, (list, tuple, set)):
+                dates = [dates]
+            matched = False
+            for d in dates:
+                d_str = str(d).strip().split("T")[0]
+                if d_str in target_candidates:
+                    matched = True
+                    break
+                if "." in d_str:
+                    parts = d_str.split(".")
+                    if len(parts) == 3:
+                        try:
+                            parsed_iso = date(
+                                int(parts[2]), int(parts[1]), int(parts[0])
+                            ).strftime("%Y-%m-%d")
+                            if parsed_iso in target_candidates:
+                                matched = True
+                                break
+                        except ValueError:
+                            pass
+                elif "-" in d_str:
+                    parts = d_str.split("-")
+                    if len(parts) == 3:
+                        try:
+                            parsed_ru = date(
+                                int(parts[0]), int(parts[1]), int(parts[2])
+                            ).strftime("%d.%m.%Y")
+                            if parsed_ru in target_candidates:
+                                matched = True
+                                break
+                        except ValueError:
+                            pass
+            if matched:
                 filtered.append(product)
         return filtered

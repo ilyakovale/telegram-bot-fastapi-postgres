@@ -10,6 +10,7 @@ try:
         delete_order_by_id,
         get_all_orders,
         get_available_products,
+        get_order_by_id,
         get_orders_by_chat_id,
     )
     from database import Base, engine
@@ -27,6 +28,7 @@ except (ImportError, ModuleNotFoundError):
         delete_order_by_id,
         get_all_orders,
         get_available_products,
+        get_order_by_id,
         get_orders_by_chat_id,
     )
     from order_service.database import Base, engine
@@ -110,6 +112,24 @@ async def handle_all_orders_get():
         for o in orders
     ]
     return {"status": "success", "orders": orders_data}
+
+
+@fapp.post("/order_get")
+async def handle_order_get(request: OrderIDRequest):
+    order = await get_order_by_id(request.order_id)
+    if not order:
+        return {"status": "error", "message": "Заказ не найден"}
+    return {
+        "status": "success",
+        "order": {
+            "id": order.id,
+            "chat_id": order.chat_id,
+            "date": str(order.date),
+            "last_date_before_registration": str(order.last_date_before_registration),
+            "products_max": order.products_max,
+            "products_current": order.products_current,
+        },
+    }
 
 
 @fapp.post("/order_delete")

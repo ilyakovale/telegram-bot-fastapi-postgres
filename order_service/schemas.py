@@ -1,7 +1,27 @@
 from datetime import date
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+def _parse_date_input(v: Any) -> Any:
+    if isinstance(v, str):
+        clean = v.strip()
+        if "." in clean:
+            parts = clean.split(".")
+            if len(parts) == 3:
+                try:
+                    return date(int(parts[2]), int(parts[1]), int(parts[0]))
+                except ValueError:
+                    pass
+        elif "-" in clean:
+            parts = clean.split("-")
+            if len(parts) == 3:
+                try:
+                    return date(int(parts[0]), int(parts[1]), int(parts[2]))
+                except ValueError:
+                    pass
+    return v
 
 
 class OrderCreateRequest(BaseModel):
@@ -10,6 +30,11 @@ class OrderCreateRequest(BaseModel):
     last_date_before_registration: date
     products_max: list[Any] | dict[str, Any] = Field(default_factory=list)
     products_current: list[Any] | dict[str, Any] = Field(default_factory=list)
+
+    @field_validator("date", "last_date_before_registration", mode="before")
+    @classmethod
+    def validate_dates(cls, v: Any) -> Any:
+        return _parse_date_input(v)
 
 
 class OrderResponse(BaseModel):
@@ -21,6 +46,11 @@ class OrderResponse(BaseModel):
     products_current: list[Any] | dict[str, Any]
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("date", "last_date_before_registration", mode="before")
+    @classmethod
+    def validate_dates(cls, v: Any) -> Any:
+        return _parse_date_input(v)
 
 
 class OrderUserRequest(BaseModel):

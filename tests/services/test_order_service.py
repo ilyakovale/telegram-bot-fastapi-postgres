@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -5,10 +6,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 from pydantic import ValidationError
+from sqlalchemy import create_mock_engine
 
 from order_service.__main__ import fapp, lifespan
 from order_service.crud import (
     _get_session,
+    _normalize_date,
     create_order,
     create_product,
     delete_order_by_id,
@@ -18,6 +21,7 @@ from order_service.crud import (
     get_order_by_id,
     get_orders_by_chat_id,
 )
+from order_service.database import Base
 from order_service.models import Order, Product
 from order_service.schemas import (
     AvailableProductsRequest,
@@ -78,6 +82,10 @@ def test_order_model_structure():
     assert "last_date_before_registration" in columns
     assert "products_max" in columns
     assert "products_current" in columns
+    chat_id_col = columns["chat_id"]
+    assert any(
+        fk.target_fullname == "accounts.chat_id" for fk in chat_id_col.foreign_keys
+    )
 
 
 def test_product_model_structure():
@@ -88,6 +96,23 @@ def test_product_model_structure():
     assert "unit" in columns
     assert "is_active" in columns
     assert "available_dates" in columns
+    assert columns["unit"].default.arg == "шт"
+    assert columns["is_active"].default.arg is True
+
+
+def test_metadata_ddl_generation_postgresql():
+    ddl_statements = []
+
+    def executor(sql, *args, **kwargs):
+        ddl_statements.append(str(sql.compile(dialect=mock_engine.dialect)).strip())
+
+    mock_engine = create_mock_engine("postgresql+asyncpg://", executor)
+    Base.metadata.create_all(mock_engine)
+    combined = "\n".join(ddl_statements)
+    assert "CREATE TABLE accounts" in combined
+    assert "CREATE TABLE products" in combined
+    assert "CREATE TABLE orders" in combined
+    assert "FOREIGN KEY(chat_id) REFERENCES accounts (chat_id)" in combined
 
 
 def test_schemas_order_create_request_valid():
@@ -111,6 +136,28 @@ def test_schemas_order_create_request_defaults():
     )
     assert req.products_max == []
     assert req.products_current == []
+
+
+def test_schemas_order_create_request_russian_date_format():
+    req = OrderCreateRequest(
+        chat_id=12345,
+        date="31.12.2026",
+        last_date_before_registration="25.12.2026",
+    )
+    assert req.date == date(2026, 12, 31)
+    assert req.last_date_before_registration == date(2026, 12, 25)
+
+
+def test_schemas_order_create_request_dict_products():
+    req = OrderCreateRequest(
+        chat_id=12345,
+        date="2026-12-31",
+        last_date_before_registration="2026-12-25",
+        products_max={"молоко": 2, "сыр": 1},
+        products_current={"молоко": 1},
+    )
+    assert isinstance(req.products_max, dict)
+    assert req.products_max["молоко"] == 2
 
 
 def test_schemas_order_create_request_invalid():
@@ -166,6 +213,14 @@ def test_schemas_available_products_request():
     assert req3.target_date is None
 
 
+def test_crud_normalize_date():
+    assert _normalize_date("31.12.2026") == date(2026, 12, 31)
+    assert _normalize_date("2026-12-31") == date(2026, 12, 31)
+    assert _normalize_date(date(2026, 12, 31)) == date(2026, 12, 31)
+    with pytest.raises(ValueError):
+        _normalize_date("invalid-date-string")
+
+
 @pytest.mark.asyncio
 async def test_crud_create_order():
     session = MockSession()
@@ -182,6 +237,43 @@ async def test_crud_create_order():
     assert session.committed is True
     assert len(session.added) == 1
     assert len(session.refreshed) == 1
+
+
+@pytest.mark.asyncio
+async def test_crud_create_order_with_string_dates():
+    session = MockSession()
+    order = await create_order(
+        chat_id=999,
+        order_date="31.12.2026",
+        last_date_before_registration="25.12.2026",
+        products_max={"молоко": 1},
+        products_current={"молоко": 1},
+        session=session,
+    )
+    assert order.chat_id == 999
+    assert order.date == date(2026, 12, 31)
+    assert order.last_date_before_registration == date(2026, 12, 25)
+
+
+@pytest.mark.asyncio
+async def test_crud_create_orders_concurrently():
+    sessions = [MockSession() for _ in range(5)]
+    tasks = [
+        create_order(
+            chat_id=1000 + i,
+            order_date=date(2026, 12, 31),
+            last_date_before_registration=date(2026, 12, 25),
+            products_max=[{"id": i}],
+            products_current=[{"id": i}],
+            session=sessions[i],
+        )
+        for i in range(5)
+    ]
+    results = await asyncio.gather(*tasks)
+    assert len(results) == 5
+    for i, res in enumerate(results):
+        assert res.chat_id == 1000 + i
+        assert sessions[i].committed is True
 
 
 @pytest.mark.asyncio
@@ -302,29 +394,50 @@ async def test_crud_get_available_products():
         is_active=True,
         available_dates=["2026-12-25"],
     )
-    session = MockSession(execute_result=MockQueryResult(items=[p1, p2, p3]))
+    p4 = Product(
+        id=4,
+        name="Кефир",
+        unit="шт",
+        is_active=True,
+        available_dates="2026-12-31",
+    )
+    p5 = Product(
+        id=5,
+        name="Ряженка",
+        unit="шт",
+        is_active=True,
+        available_dates=["2026-12-31T12:00:00"],
+    )
+    session = MockSession(execute_result=MockQueryResult(items=[p1, p2, p3, p4, p5]))
 
     all_active = await get_available_products(target_date=None, session=session)
-    assert len(all_active) == 3
+    assert len(all_active) == 5
 
     for_new_year = await get_available_products(
         target_date="2026-12-31", session=session
     )
-    assert len(for_new_year) == 2
     assert p1 in for_new_year
     assert p2 in for_new_year
+    assert p4 in for_new_year
+    assert p5 in for_new_year
     assert p3 not in for_new_year
 
     for_new_year_ru = await get_available_products(
         target_date="31.12.2026", session=session
     )
-    assert len(for_new_year_ru) == 2
     assert p2 in for_new_year_ru
+    assert p4 in for_new_year_ru
 
     for_date_obj = await get_available_products(
         target_date=date(2026, 12, 31), session=session
     )
-    assert len(for_date_obj) == 2
+    assert len(for_date_obj) == 4
+
+    unparseable_target = await get_available_products(
+        target_date="not-a-real-date", session=session
+    )
+    assert len(unparseable_target) == 1
+    assert p1 in unparseable_target
 
 
 @pytest.mark.asyncio
@@ -382,6 +495,46 @@ async def test_api_order_create():
 
 
 @pytest.mark.asyncio
+async def test_api_order_create_russian_date_and_dict_products():
+    fake_order = Order(
+        id=88,
+        chat_id=456,
+        date=date(2026, 12, 31),
+        last_date_before_registration=date(2026, 12, 25),
+        products_max={"молоко": 2},
+        products_current={"молоко": 2},
+    )
+    with patch(
+        "order_service.__main__.create_order", AsyncMock(return_value=fake_order)
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            payload = {
+                "chat_id": 456,
+                "date": "31.12.2026",
+                "last_date_before_registration": "25.12.2026",
+                "products_max": {"молоко": 2},
+                "products_current": {"молоко": 2},
+            }
+            response = await ac.post("/order_create", json=payload)
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
+            assert data["id"] == 88
+            assert data["order"]["products_max"] == {"молоко": 2}
+
+
+@pytest.mark.asyncio
+async def test_api_order_create_invalid_payload():
+    async with AsyncClient(
+        transport=ASGITransport(app=fapp), base_url="http://test"
+    ) as ac:
+        response = await ac.post("/order_create", json={"invalid": "payload"})
+        assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_api_orders_get():
     fake_order = Order(
         id=77,
@@ -431,6 +584,43 @@ async def test_api_all_orders_get():
 
 
 @pytest.mark.asyncio
+async def test_api_order_get_success():
+    fake_order = Order(
+        id=42,
+        chat_id=777,
+        date=date(2026, 12, 31),
+        last_date_before_registration=date(2026, 12, 25),
+        products_max=[{"name": "Творог", "quantity": 1}],
+        products_current=[{"name": "Творог", "quantity": 1}],
+    )
+    with patch(
+        "order_service.__main__.get_order_by_id", AsyncMock(return_value=fake_order)
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            response = await ac.post("/order_get", json={"order_id": 42})
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
+            assert data["order"]["id"] == 42
+            assert data["order"]["chat_id"] == 777
+
+
+@pytest.mark.asyncio
+async def test_api_order_get_not_found():
+    with patch("order_service.__main__.get_order_by_id", AsyncMock(return_value=None)):
+        async with AsyncClient(
+            transport=ASGITransport(app=fapp), base_url="http://test"
+        ) as ac:
+            response = await ac.post("/order_get", json={"order_id": 999})
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "error"
+            assert data["message"] == "Заказ не найден"
+
+
+@pytest.mark.asyncio
 async def test_api_order_delete_success():
     with patch(
         "order_service.__main__.delete_order_by_id", AsyncMock(return_value=True)
@@ -456,6 +646,15 @@ async def test_api_order_delete_not_found():
             data = response.json()
             assert data["status"] == "error"
             assert data["message"] == "Заказ не найден"
+
+
+@pytest.mark.asyncio
+async def test_api_order_delete_invalid_payload():
+    async with AsyncClient(
+        transport=ASGITransport(app=fapp), base_url="http://test"
+    ) as ac:
+        response = await ac.post("/order_delete", json={"not_order_id": "bad"})
+        assert response.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -519,4 +718,4 @@ async def test_app_lifespan():
     with patch("order_service.__main__.engine", mock_engine):
         async with lifespan(fapp):
             pass
-        mock_conn.run_sync.assert_called_once()
+        mock_conn.run_sync.assert_called_once_with(Base.metadata.create_all)

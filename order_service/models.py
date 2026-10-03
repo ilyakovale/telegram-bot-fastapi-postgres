@@ -1,10 +1,21 @@
-from sqlalchemy import BigInteger, Boolean, Column, Date, ForeignKey, String
+from sqlalchemy import BigInteger, Boolean, Column, Date, ForeignKey, String, Table
 from sqlalchemy.dialects.postgresql import JSONB
 
 try:
     from database import Base
 except (ImportError, ModuleNotFoundError):
     from order_service.database import Base
+
+Table(
+    "accounts",
+    Base.metadata,
+    Column("chat_id", BigInteger, primary_key=True),
+    Column("name", String, nullable=False),
+    Column("address", String, nullable=False),
+    Column("phone_number", String, nullable=False),
+    Column("block", Boolean, default=False),
+    extend_existing=True,
+)
 
 
 class Order(Base):
