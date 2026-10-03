@@ -1,8 +1,12 @@
 import asyncio
 
 import uvicorn
-from dispatcher import bot, dp
 from fastapi import FastAPI
+
+try:
+    from dispatcher import bot, dp
+except (ImportError, ModuleNotFoundError):
+    from gateway_service.dispatcher import bot, dp
 
 fapp = FastAPI(title="Gateway Microservice")
 

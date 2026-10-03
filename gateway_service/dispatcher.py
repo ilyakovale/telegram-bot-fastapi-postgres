@@ -3,11 +3,19 @@ import os
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from config import TOKEN
-from handlers.account import router_account
-from handlers.admin import router_admin
-from handlers.main import router_main
-from handlers.order import router_order
+
+try:
+    from config import TOKEN
+    from handlers.account import router_account
+    from handlers.admin import router_admin
+    from handlers.main import router_main
+    from handlers.order import router_order
+except (ImportError, ModuleNotFoundError):
+    from gateway_service.config import TOKEN
+    from gateway_service.handlers.account import router_account
+    from gateway_service.handlers.admin import router_admin
+    from gateway_service.handlers.main import router_main
+    from gateway_service.handlers.order import router_order
 
 bot = Bot(token=TOKEN)
 

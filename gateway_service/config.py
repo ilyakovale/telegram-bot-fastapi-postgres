@@ -1,13 +1,10 @@
 import os
-import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).parent
 print(f"Python ищет файлы в: {BASE_DIR}")
-
-sys.path.append(str((BASE_DIR.parent) / "requests_templates"))
 
 load_dotenv(BASE_DIR / ".env.token")
 TOKEN = os.getenv("TOKEN")
@@ -20,8 +17,12 @@ ADMINS = os.getenv("ADMINS")
 ADMINS = [int(admin) for admin in ADMINS.split(",")] if ADMINS else []
 print(f"ADMINS: {ADMINS}")
 
-with open(BASE_DIR / "contacts.txt", "r", encoding="utf-8") as file:
-    contacts = file.read()
+contacts_path = BASE_DIR / "contacts.txt"
+if contacts_path.exists():
+    with open(contacts_path, "r", encoding="utf-8") as file:
+        contacts = file.read()
+else:
+    contacts = os.getenv("CONTACTS", "Контактная информация не указана.")
 
 if not contacts:
     print(

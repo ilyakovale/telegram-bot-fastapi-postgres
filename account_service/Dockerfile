@@ -1,12 +1,12 @@
-FROM python:3.14-alpine3.22
+FROM python:3.12-alpine
 WORKDIR /python-app
 ENV PYTHONUNBUFFERED=1
 
-COPY ./account_service/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache -r requirements.txt
 
-COPY ./account_service/ ./account_service/
+COPY . .
 
 EXPOSE 8001
 
-CMD ["python", "account_service/__main__.py"]
+CMD ["python", "__main__.py"]
