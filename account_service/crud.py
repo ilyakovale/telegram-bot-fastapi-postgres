@@ -13,10 +13,19 @@ except (ImportError, ModuleNotFoundError):
 @asynccontextmanager
 async def _get_session(session=None):
     if session is not None:
-        yield session
+        try:
+            yield session
+        except Exception:
+            if hasattr(session, "rollback"):
+                await session.rollback()
+            raise
     else:
         async with async_session() as s:
-            yield s
+            try:
+                yield s
+            except Exception:
+                await s.rollback()
+                raise
 
 
 async def check_account(chat_id: int, session=None) -> bool:

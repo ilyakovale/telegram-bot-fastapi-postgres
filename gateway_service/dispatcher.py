@@ -26,7 +26,10 @@ def create_storage():
         from aiogram.fsm.storage.redis import RedisStorage
 
         client = redis.from_url(REDIS_URL, socket_connect_timeout=1)
-        client.ping()
+        try:
+            client.ping()
+        finally:
+            client.close()
         return RedisStorage.from_url(REDIS_URL)
     except Exception as e:
         logging.warning(f"Не удалось подключиться к Redis ({e}), используется MemoryStorage")

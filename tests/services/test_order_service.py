@@ -890,3 +890,19 @@ async def test_crud_session_rollback_on_error():
         async with _get_session(mock_session):
             raise ZeroDivisionError("Forced error")
     assert mock_session.rolled_back is True
+
+
+@pytest.mark.asyncio
+async def test_crud_create_order_deadline_after_order_date_raises():
+    mock_session = MockSession()
+    with pytest.raises(
+        ValueError, match="last_date_before_registration cannot be later than order_date"
+    ):
+        await create_order(
+            chat_id=123,
+            order_date="2026-12-10",
+            last_date_before_registration="2026-12-20",
+            products_max=[],
+            products_current=[],
+            session=mock_session,
+        )

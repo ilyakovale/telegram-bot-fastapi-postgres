@@ -49,6 +49,8 @@ async def create_order(
 ) -> Order:
     parsed_date = _normalize_date(order_date)
     parsed_last_date = _normalize_date(last_date_before_registration)
+    if parsed_last_date > parsed_date:
+        raise ValueError("last_date_before_registration cannot be later than order_date")
     async with _get_session(session) as s:
         order = Order(
             chat_id=chat_id,

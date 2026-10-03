@@ -518,3 +518,59 @@ async def test_view_own_orders_api_error_response(message_factory, mock_bot, moc
     await handle_view_my_orders(msg)
     sent_texts = get_sent_texts(mock_bot)
     assert any("Не удалось загрузить заказы:" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_product_choice_with_parentheses_in_name(
+    message_factory, fsm_context_factory, mock_bot
+):
+    msg = message_factory(text="Кефир (1%)", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_product_choice)
+    await state.update_data(
+        available_products=[
+            {"id": 1, "name": "Кефир (1%)"},
+            {"id": 2, "name": "Творог (обезжиренный)"},
+        ],
+        selected_products={},
+    )
+    await handle_product_choice(msg, state)
+    current_state = await state.get_state()
+    assert current_state == NewOrderStates.waiting_for_quantity.state
+    data = await state.get_data()
+    assert data["current_product"] == "Кефир (1%)"
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Введите количество для 'Кефир (1%)'" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_date_cancel(message_factory, fsm_context_factory, mock_bot):
+    msg = message_factory(text="Отменить", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_date)
+    await handle_order_date(msg, state)
+    assert await state.get_state() is None
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Оформление заказа отменено." in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_last_date_cancel(message_factory, fsm_context_factory, mock_bot):
+    msg = message_factory(text="Отменить", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_last_date)
+    await handle_order_last_date(msg, state)
+    assert await state.get_state() is None
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Оформление заказа отменено." in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_order_quantity_cancel(message_factory, fsm_context_factory, mock_bot):
+    msg = message_factory(text="Отменить", user_id=123)
+    state = fsm_context_factory(user_id=123)
+    await state.set_state(NewOrderStates.waiting_for_quantity)
+    await handle_quantity_input(msg, state)
+    assert await state.get_state() is None
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Оформление заказа отменено." in text for text in sent_texts)

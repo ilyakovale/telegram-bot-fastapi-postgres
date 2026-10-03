@@ -37,12 +37,16 @@ class MockSession:
         self.execute_result = execute_result or MockQueryResult()
         self.added = []
         self.committed = False
+        self.rolled_back = False
 
     def add(self, obj):
         self.added.append(obj)
 
     async def commit(self):
         self.committed = True
+
+    async def rollback(self):
+        self.rolled_back = True
 
     async def execute(self, statement):
         return self.execute_result
@@ -385,3 +389,12 @@ async def test_api_lifespan():
         async with lifespan(fapp):
             pass
         mock_conn.run_sync.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_crud_session_rollback_on_error():
+    mock_session = MockSession()
+    with pytest.raises(ZeroDivisionError):
+        async with _get_session(mock_session):
+            raise ZeroDivisionError("Forced error")
+    assert mock_session.rolled_back is True

@@ -49,6 +49,13 @@ async def handle_order_date(message: Message, state: FSMContext):
         await message.answer("Неверный формат даты. Введите дату в формате ДД.ММ.ГГГГ:")
         return
     raw_date = message.text.strip()
+    if raw_date in ("Отменить", "Отмена", "/cancel"):
+        await state.clear()
+        await message.answer("Оформление заказа отменено.", reply_markup=start_keyboard())
+        from .main import start
+
+        await start(message)
+        return
     try:
         parsed_date = datetime.strptime(raw_date, "%d.%m.%Y").date()
     except ValueError:
@@ -69,6 +76,13 @@ async def handle_order_last_date(message: Message, state: FSMContext):
         await message.answer("Неверный формат даты. Введите дату в формате ДД.ММ.ГГГГ:")
         return
     raw_last_date = message.text.strip()
+    if raw_last_date in ("Отменить", "Отмена", "/cancel"):
+        await state.clear()
+        await message.answer("Оформление заказа отменено.", reply_markup=start_keyboard())
+        from .main import start
+
+        await start(message)
+        return
     try:
         parsed_last_date = datetime.strptime(raw_last_date, "%d.%m.%Y").date()
     except ValueError:
@@ -128,9 +142,22 @@ async def handle_product_choice(message: Message, state: FSMContext):
 
         await start(message)
         return
-    clean_name = message.text.split(" (")[0].strip()
     valid_names = [p.get("name", "") if isinstance(p, dict) else str(p) for p in products]
-    if clean_name not in valid_names:
+    clean_name = None
+    if message.text in valid_names:
+        clean_name = message.text
+    else:
+        for name in valid_names:
+            qty = selected.get(name)
+            if qty is not None and message.text == f"{name} ({qty} шт.)":
+                clean_name = name
+                break
+        if clean_name is None and message.text.endswith(" шт.)") and " (" in message.text:
+            candidate = message.text.rsplit(" (", 1)[0].strip()
+            if candidate in valid_names:
+                clean_name = candidate
+
+    if not clean_name or clean_name not in valid_names:
         await message.answer("Пожалуйста, выберите товар из предложенного списка:")
         return
     await state.update_data(current_product=clean_name)
@@ -145,7 +172,14 @@ async def handle_quantity_input(message: Message, state: FSMContext):
         await message.answer("Количество должно быть целым положительным числом. Попробуйте снова:")
         return
     text = message.text.strip()
-    if not text.isdigit() or int(text) <= 0:
+    if text in ("Отменить", "Отмена", "/cancel"):
+        await state.clear()
+        await message.answer("Оформление заказа отменено.", reply_markup=start_keyboard())
+        from .main import start
+
+        await start(message)
+        return
+    if not text.isdigit() or int(text) <= 0 or int(text) > 100000:
         await message.answer("Количество должно быть целым положительным числом. Попробуйте снова:")
         return
     qty = int(text)

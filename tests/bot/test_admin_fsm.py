@@ -320,3 +320,36 @@ async def test_delete_order_non_text_message(message_factory, fsm_context_factor
     assert current_state == AdminStates.waiting_for_delete_order.state
     sent_texts = get_sent_texts(mock_bot)
     assert any("ID заказа должен быть числом" in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_block_user_cancel_via_back_button(message_factory, fsm_context_factory, mock_bot):
+    msg = message_factory(text="◀️ Назад", is_admin=True)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AdminStates.waiting_for_block)
+    await block_account_service(msg, state)
+    assert await state.get_state() is None
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Действие отменено." in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_unblock_user_cancel_via_back_button(message_factory, fsm_context_factory, mock_bot):
+    msg = message_factory(text="◀️ Назад", is_admin=True)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AdminStates.waiting_for_unblock)
+    await unblock_account_service(msg, state)
+    assert await state.get_state() is None
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Действие отменено." in text for text in sent_texts)
+
+
+@pytest.mark.asyncio
+async def test_delete_order_cancel_via_back_button(message_factory, fsm_context_factory, mock_bot):
+    msg = message_factory(text="◀️ Назад", is_admin=True)
+    state = fsm_context_factory(user_id=msg.from_user.id)
+    await state.set_state(AdminStates.waiting_for_delete_order)
+    await delete_order_service(msg, state)
+    assert await state.get_state() is None
+    sent_texts = get_sent_texts(mock_bot)
+    assert any("Действие отменено." in text for text in sent_texts)

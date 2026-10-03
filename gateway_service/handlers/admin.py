@@ -57,6 +57,10 @@ async def ask_block_account_service(message: Message, state: FSMContext):
 
 async def block_account_service(message: Message, state: FSMContext):
     if await admin_check(message):
+        if message.text in ("◀️ Назад", "Назад", "Отмена", "/cancel"):
+            await state.clear()
+            await message.answer("Действие отменено.", reply_markup=admin_account_keyboard())
+            return
         if not message.text or not message.text.isdigit():
             await message.answer("ID должен быть числом. Попробуйте ещё раз:")
             return
@@ -77,6 +81,10 @@ async def ask_unblock_account_service(message: Message, state: FSMContext):
 
 async def unblock_account_service(message: Message, state: FSMContext):
     if await admin_check(message):
+        if message.text in ("◀️ Назад", "Назад", "Отмена", "/cancel"):
+            await state.clear()
+            await message.answer("Действие отменено.", reply_markup=admin_account_keyboard())
+            return
         if not message.text or not message.text.isdigit():
             await message.answer("ID должен быть числом. Попробуйте ещё раз:")
             return
@@ -149,6 +157,10 @@ async def ask_delete_order_service(message: Message, state: FSMContext):
 
 async def delete_order_service(message: Message, state: FSMContext):
     if await admin_check(message):
+        if message.text in ("◀️ Назад", "Назад", "Отмена", "/cancel"):
+            await state.clear()
+            await message.answer("Действие отменено.", reply_markup=admin_order_keyboard())
+            return
         if not message.text or not message.text.isdigit():
             await message.answer("ID заказа должен быть числом. Попробуйте ещё раз:")
             return
