@@ -1,6 +1,10 @@
-from sqlalchemy import Column, Date, BigInteger, ForeignKey
+from sqlalchemy import BigInteger, Boolean, Column, Date, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
-from database import Base
+
+try:
+    from database import Base
+except (ImportError, ModuleNotFoundError):
+    from order_service.database import Base
 
 
 class Order(Base):
@@ -12,3 +16,13 @@ class Order(Base):
     last_date_before_registration = Column(Date, nullable=False)
     products_max = Column(JSONB, nullable=False, default=list)
     products_current = Column(JSONB, nullable=False, default=list)
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    unit = Column(String, default="шт")
+    is_active = Column(Boolean, default=True)
+    available_dates = Column(JSONB, default=list)
