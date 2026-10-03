@@ -7,6 +7,8 @@ env/
 venv/
 .venv/
 .env*
+!.env.token
+!.env.url
 *.log
 .pytest_cache/
 .ruff_cache/

@@ -7,6 +7,13 @@ services:
     image: gateway_service:latest
     container_name: gateway_service
     restart: unless-stopped
+    env_file:
+      - path: .env.token
+        required: false
+      - path: gateway_service/.env.token
+        required: false
+      - path: .env
+        required: false
     environment:
       - ACCOUNT_SERVICE_URL=http://account_service:8001
       - ORDER_SERVICE_URL=http://order_service:8002

@@ -1,21 +1,27 @@
 import logging
 import os
+import sys
+from pathlib import Path
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 try:
-    from gateway_service.config import TOKEN
-    from gateway_service.handlers.account import router_account
-    from gateway_service.handlers.admin import router_admin
-    from gateway_service.handlers.main import router_main
-    from gateway_service.handlers.order import router_order
-except (ImportError, ModuleNotFoundError):
     from config import TOKEN
     from handlers.account import router_account
     from handlers.admin import router_admin
     from handlers.main import router_main
     from handlers.order import router_order
+except (ImportError, ModuleNotFoundError):
+    from gateway_service.config import TOKEN
+    from gateway_service.handlers.account import router_account
+    from gateway_service.handlers.admin import router_admin
+    from gateway_service.handlers.main import router_main
+    from gateway_service.handlers.order import router_order
 
 bot = None
 if TOKEN:
