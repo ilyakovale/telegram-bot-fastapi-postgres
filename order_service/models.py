@@ -11,9 +11,9 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 try:
-    from database import Base
-except (ImportError, ModuleNotFoundError):
     from order_service.database import Base
+except (ImportError, ModuleNotFoundError):
+    from database import Base
 
 JSON_STORAGE_TYPE = JSONB().with_variant(JSON(), "sqlite")
 

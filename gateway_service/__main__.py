@@ -4,9 +4,9 @@ import uvicorn
 from fastapi import FastAPI
 
 try:
-    from dispatcher import bot, dp
-except (ImportError, ModuleNotFoundError):
     from gateway_service.dispatcher import bot, dp
+except (ImportError, ModuleNotFoundError):
+    from dispatcher import bot, dp
 
 fapp = FastAPI(title="Gateway Microservice")
 
@@ -24,8 +24,12 @@ async def run_fastapi():
 
 async def main():
     print("🚀 FastAPI запущен на http://gateway_service:8000")
-    print("Бот запущен...")
-    await asyncio.gather(run_fastapi(), dp.start_polling(bot))
+    if bot:
+        print("Бот запущен...")
+        await asyncio.gather(run_fastapi(), dp.start_polling(bot))
+    else:
+        print("⚠️ Бот не запущен (TOKEN не задан). Запущен только FastAPI.")
+        await run_fastapi()
 
 
 if __name__ == "__main__":

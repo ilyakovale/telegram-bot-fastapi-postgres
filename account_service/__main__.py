@@ -4,17 +4,6 @@ import uvicorn
 from fastapi import FastAPI
 
 try:
-    from config import AccountID, GetAccountMessageRequest, SetAccountMessageRequest
-    from crud import (
-        block_account,
-        check_account,
-        get_account,
-        get_all_accounts,
-        set_account,
-        unblock_account,
-    )
-    from database import Base, engine
-except (ImportError, ModuleNotFoundError):
     from account_service.config import (
         AccountID,
         GetAccountMessageRequest,
@@ -29,6 +18,17 @@ except (ImportError, ModuleNotFoundError):
         unblock_account,
     )
     from account_service.database import Base, engine
+except (ImportError, ModuleNotFoundError):
+    from config import AccountID, GetAccountMessageRequest, SetAccountMessageRequest
+    from crud import (
+        block_account,
+        check_account,
+        get_account,
+        get_all_accounts,
+        set_account,
+        unblock_account,
+    )
+    from database import Base, engine
 
 
 @asynccontextmanager

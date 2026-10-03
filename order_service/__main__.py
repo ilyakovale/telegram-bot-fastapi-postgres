@@ -5,24 +5,6 @@ from fastapi import FastAPI
 from sqlalchemy.exc import SQLAlchemyError
 
 try:
-    from crud import (
-        create_order,
-        create_product,
-        delete_order_by_id,
-        get_all_orders,
-        get_available_products,
-        get_order_by_id,
-        get_orders_by_chat_id,
-    )
-    from database import Base, engine
-    from schemas import (
-        AvailableProductsRequest,
-        OrderCreateRequest,
-        OrderIDRequest,
-        OrderUserRequest,
-        ProductCreateRequest,
-    )
-except (ImportError, ModuleNotFoundError):
     from order_service.crud import (
         create_order,
         create_product,
@@ -34,6 +16,24 @@ except (ImportError, ModuleNotFoundError):
     )
     from order_service.database import Base, engine
     from order_service.schemas import (
+        AvailableProductsRequest,
+        OrderCreateRequest,
+        OrderIDRequest,
+        OrderUserRequest,
+        ProductCreateRequest,
+    )
+except (ImportError, ModuleNotFoundError):
+    from crud import (
+        create_order,
+        create_product,
+        delete_order_by_id,
+        get_all_orders,
+        get_available_products,
+        get_order_by_id,
+        get_orders_by_chat_id,
+    )
+    from database import Base, engine
+    from schemas import (
         AvailableProductsRequest,
         OrderCreateRequest,
         OrderIDRequest,
