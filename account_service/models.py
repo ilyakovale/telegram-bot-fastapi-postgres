@@ -1,5 +1,10 @@
-from sqlalchemy import Column, String, BigInteger, Boolean
-from database import Base
+from sqlalchemy import BigInteger, Boolean, Column, String
+
+try:
+    from database import Base
+except (ImportError, ModuleNotFoundError):
+    from account_service.database import Base
+
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -9,6 +14,3 @@ class Account(Base):
     address = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
     block = Column(Boolean, default=False)
-
-
-    
