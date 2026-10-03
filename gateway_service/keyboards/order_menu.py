@@ -13,7 +13,9 @@ def order_panel_keyboard() -> ReplyKeyboardMarkup:
     )
 
 
-def products_keyboard(products: list, selected: dict = None) -> ReplyKeyboardMarkup:
+def products_keyboard(
+    products: list, selected: dict | None = None
+) -> ReplyKeyboardMarkup:
     buttons = []
     selected = selected or {}
     for product in products:

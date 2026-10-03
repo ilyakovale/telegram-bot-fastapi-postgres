@@ -141,7 +141,11 @@ async def get_all_orders_service(message: Message):
     text = "📋 Все заказы:\n\n" + "\n\n".join(parts)
     if len(text) > 4096:
         for x in range(0, len(text), 4096):
-            await message.answer(text[x : x + 4096])
+            chunk = text[x : x + 4096]
+            if x + 4096 >= len(text):
+                await message.answer(chunk, reply_markup=admin_order_keyboard())
+            else:
+                await message.answer(chunk)
     else:
         await message.answer(text, reply_markup=admin_order_keyboard())
 

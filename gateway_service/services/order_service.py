@@ -18,6 +18,8 @@ async def create_order(chat_id: int, order_data: dict) -> dict:
             }
         except httpx.TimeoutException:
             return {"status": "error", "message": "Сервис заказов не отвечает"}
+        except httpx.RequestError as e:
+            return {"status": "error", "message": f"Ошибка соединения: {e!s}"}
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
@@ -43,6 +45,12 @@ async def get_user_orders(chat_id: int) -> dict:
                 "message": "Сервис заказов не отвечает",
                 "orders": [],
             }
+        except httpx.RequestError as e:
+            return {
+                "status": "error",
+                "message": f"Ошибка соединения: {e!s}",
+                "orders": [],
+            }
         except Exception as e:
             return {"status": "error", "message": str(e), "orders": []}
 
@@ -66,6 +74,12 @@ async def get_all_orders() -> dict:
                 "message": "Сервис заказов не отвечает",
                 "orders": [],
             }
+        except httpx.RequestError as e:
+            return {
+                "status": "error",
+                "message": f"Ошибка соединения: {e!s}",
+                "orders": [],
+            }
         except Exception as e:
             return {"status": "error", "message": str(e), "orders": []}
 
@@ -86,6 +100,8 @@ async def delete_order(order_id: int) -> dict:
             }
         except httpx.TimeoutException:
             return {"status": "error", "message": "Сервис заказов не отвечает"}
+        except httpx.RequestError as e:
+            return {"status": "error", "message": f"Ошибка соединения: {e!s}"}
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
@@ -106,9 +122,22 @@ async def get_available_products(order_date: str) -> list[dict]:
                 {"id": 2, "name": "Творог 200г"},
                 {"id": 3, "name": "Сыр 300г"},
             ]
+        except (httpx.TimeoutException, httpx.RequestError):
+            return [
+                {"id": 1, "name": "Молоко 1л"},
+                {"id": 2, "name": "Творог 200г"},
+                {"id": 3, "name": "Сыр 300г"},
+            ]
         except Exception:
             return [
                 {"id": 1, "name": "Молоко 1л"},
                 {"id": 2, "name": "Творог 200г"},
                 {"id": 3, "name": "Сыр 300г"},
             ]
+
+
+create_order_api = create_order
+get_user_orders_api = get_user_orders
+get_all_orders_api = get_all_orders
+delete_order_api = delete_order
+get_available_products_api = get_available_products
